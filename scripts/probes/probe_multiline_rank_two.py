@@ -120,6 +120,8 @@ def independent_certificate(record):
     old0,old1 = record['u0'],record['u1']
     u0 = tuple((base[0]*a+base[1]*b) % P for a,b in zip(old0,old1))
     u1 = tuple((omitted[0]*a+omitted[1]*b) % P for a,b in zip(old0,old1))
+    # A codeword shear preserves all witnesses and moves zero directions.
+    u1 = tuple((v+G[x][0]) % P for x,v in enumerate(u1))
     words = [(head,tuple(sum(a*b for a,b in zip(head,column)) % P
                          for column in G))
              for head in itertools.product(range(P),repeat=K)]
@@ -146,7 +148,43 @@ def independent_certificate(record):
     assert len(bad) == len(record['retained_bad_indices'])
     lines = three_lines(bad)
     assert len(lines) == len(record['retained_three_head_lines'])
+    line_geometry = []
+    for line in lines:
+        a,b = [bad[i] for i in line[:2]]
+        ga,gb = a['direction'][1],b['direction'][1]
+        inv = pow((gb-ga) % P,-1,P)
+        direction = tuple((y-x)*inv % P for x,y in zip(a['head'],b['head']))
+        intercept = tuple((x-ga*y) % P for x,y in zip(a['head'],direction))
+        joint = [x for x in range(N)
+                 if sum(v*w for v,w in zip(G[x],intercept)) % P == u0[x]
+                 and sum(v*w for v,w in zip(G[x],direction)) % P == u1[x]]
+        private = {str(bad[i]['direction'][1]):
+                   [x for x in bad[i]['witnesses'][0]['agreement'] if x not in joint]
+                   for i in line}
+        assert len({x for values in private.values() for x in values}) == sum(map(len,private.values()))
+        line_geometry.append(dict(indices=line,intercept=intercept,
+                                  direction=direction,joint=joint,private=private))
+    cross_matrices = []
+    for i,j in itertools.combinations(range(len(lines)),2):
+        roots = []
+        error_intersections = []
+        agreement_intersections = []
+        for a in lines[i]:
+            roots.append([[x for x in range(N)
+                           if sum(v*(h-k) for v,h,k in zip(G[x],bad[a]['head'],bad[b]['head'])) % P == 0]
+                          for b in lines[j]])
+            error_intersections.append([sorted(set(bad[a]['witnesses'][0]['errors'])
+                                               .intersection(bad[b]['witnesses'][0]['errors']))
+                                        for b in lines[j]])
+            agreement_intersections.append([sorted(set(bad[a]['witnesses'][0]['agreement'])
+                                                   .intersection(bad[b]['witnesses'][0]['agreement']))
+                                            for b in lines[j]])
+        cross_matrices.append(dict(line_indices=(i,j),head_difference_root_sets=roots,
+                                   error_intersections=error_intersections,
+                                   agreement_intersections=agreement_intersections))
     return dict(u0=u0,u1=u1,bad=bad,three_head_lines=lines,
+                codeword_shear=(1,)+(0,)*(K-1),line_geometry=line_geometry,
+                cross_line_matrices=cross_matrices,
                 verifier='enumerate every codeword and restricted code image')
 
 
