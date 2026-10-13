@@ -74,6 +74,26 @@ def main():
                 sum(3**e*word[e] for e in range(48)) % p,
                 *tuple(v % p for v in incidence[:11]))
 
+    books = []
+    for edge in range(48):
+        petals = [(support,c) for support,c in triangles if edge in support]
+        assert len(petals) == 4
+        for selected in itertools.combinations(petals,3):
+            v = [vector(c) for _,c in selected]
+            s = [c['syndrome'] for _,c in selected]
+            coefficients = [(s[1][0]*s[2][1]-s[1][1]*s[2][0]) % p,
+                            (s[2][0]*s[0][1]-s[2][1]*s[0][0]) % p,
+                            (s[0][0]*s[1][1]-s[0][1]*s[1][0]) % p]
+            assert all(coefficients)
+            distance_word = tuple(sum(a*b[e] for a,b in zip(coefficients,v)) % p
+                                  for e in range(48))
+            support = frozenset(e for e,x in enumerate(distance_word) if x)
+            assert syndrome(distance_word) == (0,)*13 and len(support) == 7
+            books.append(support)
+    assert len(books) == len(set(books)) == 192
+    assert all(sum(e in support for support in books) == 28 for e in range(48))
+    # Every repeated-coordinate code therefore has distance <=7n/48,
+    # by averaging these 192 actual codeword supports.
     assert syndrome(u0) == (1,0)+(0,)*11
     assert syndrome(u1) == (0,1)+(0,)*11
     witnesses = []
@@ -96,7 +116,7 @@ def main():
     # distinct cycles remain independent. Hence no decoded collinear triple.
     for triple in itertools.combinations(triangles,3):
         supports = [entry[0] for entry in triple]
-        assert len(set.union(*map(set,supports))) >= 5
+        assert len(set.union(*map(set,supports))) >= 7
         assert any(sum(e in s for s in supports) == 1 for e in set.union(*map(set,supports)))
     errors = [set(w['errors']) for w in witnesses]
     assert all(sum(e in support for support in errors) == 4 for e in range(48))
@@ -104,7 +124,7 @@ def main():
     assert cube == 48*(64**3-60**3)
     assert 48**2*cube+(64*(48-3))**3 == 48**3*64**3
     assert 7*64**3 <= cube+4*3*64**2+7*64
-    print(json.dumps(dict(field=p,length=48,dimension=35,distance_lower_bound=7,
+    print(json.dumps(dict(field=p,length=48,dimension=35,distance=7,
                          error_budget=3,witness_count=64,over_budget_required=49,
                          over_budget=True,unique_decoding=True,line_cap=2,
                          parity_check_rows='powers 2 and 3 followed by eleven oriented incidence rows',
@@ -112,6 +132,9 @@ def main():
                          cycle_counts={length:sum(c['length'] == length for c in cycles.values())
                                        for length in range(3,7)},
                          checked_nullity_two_cycle_pairs=checked_pairs,
+                         seven_coordinate_codeword_supports=len(books),
+                         book_support_occurrences_per_coordinate=28,
+                         replication_distance_fraction_upper_bound=dict(numerator=7,denominator=48),
                          ordered_union_cube=cube,cube_upper_equality=True,
                          distance_proof='graph rank and checked short-cycle lift conditions',
                          canonical_sponsor_rs_code=False,sponsor_rate_half=False,
