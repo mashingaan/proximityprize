@@ -272,6 +272,20 @@ def quarter_cube_candidate():
                 evidence='arithmetic candidate, canonical quarter-rate transfer not checked')
 
 
+def three_head_joint_core_profile():
+    """Diagnose the distance-only interaction budget, without an RS no-go claim."""
+    t = 221512373
+    min_joint_core = N-(3*t)//2
+    pair_joint_cap = K-1
+    slack = min_joint_core**2-N*pair_joint_cap
+    assert slack < 0
+    return dict(error_budget=t,min_joint_core=min_joint_core,
+                pair_joint_intersection_cap=pair_joint_cap,
+                rankin_square_slack=slack,
+                evidence='exact budget diagnosis, not a countermodel to RS structure',
+                next_requirement='interaction beyond the pairwise code-distance overlap cap')
+
+
 if __name__ == '__main__':
     moments = [moment_frontier(r) for r in range(3,7)]
     assert moments[0]['max_error'] == 210683555
@@ -283,4 +297,5 @@ if __name__ == '__main__':
                           exterior_line_triples=weighted_frontier(True),
                           constant_line_triples=constant_line_frontier(),
                           refined_degeneracy_candidate=refined_degeneracy_candidate(),
-                          quarter_cube_candidate=quarter_cube_candidate()),indent=2))
+                          quarter_cube_candidate=quarter_cube_candidate(),
+                          three_head_joint_core_profile=three_head_joint_core_profile()),indent=2))
