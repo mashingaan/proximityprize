@@ -28,19 +28,26 @@ def small_shortening():
     projected = [(1,label) for label in (0,0,0,1,1,1,2,2)]
     histogram = {}
     third_weight = 9
+    circuits = []
     for size in range(9):
         nullities = []
         for support in itertools.combinations(range(8),size):
             nullity = size-rank([projected[x] for x in support],FIRST_PRIME)
             nullities.append(nullity)
+            if size <= 2 and nullity == 1:
+                if all(size-1-rank([projected[x] for x in support if x != removed],FIRST_PRIME) == 0
+                       for removed in support):
+                    circuits.append(support)
             if nullity >= 3:
                 third_weight = min(third_weight,size)
         histogram[size] = dict(minimum=min(nullities),maximum=max(nullities))
     assert third_weight == 5
     assert histogram[4] == dict(minimum=2,maximum=2)
     assert histogram[5] == dict(minimum=3,maximum=3)
+    assert len(circuits) == 7
     return dict(field=FIRST_PRIME,length=8,supercode_dimension=6,
                 third_generalized_support_weight=third_weight,
+                minimal_error_supports=circuits,minimal_error_support_count=len(circuits),
                 shortening_dimensions=histogram,
                 scope='all coordinate supports of the explicit length-eight quotient certificate')
 
@@ -67,21 +74,25 @@ def finite_field_obstruction():
                 third_generalized_support_weight=3,required_code_dimension=2,
                 required_code_distance=3,rank_two_surjections=surjections,
                 suitable_kernels=valid,best_kernel_distance=best,
+                singleton_minimal_supports=4,available_projective_quotient_directions=3,
                 conclusion='third-support-weight condition alone does not certify a codimension-two code')
 
 
 def literal_dimensions():
     n,k,D = 1073741824,536870912,536870913
+    t = 221512373
     assert D == n-k+1
     dimension = k+2
     projected_rank = n-dimension
     assert projected_rank == D-3
     assert dimension-(n-(D-1)) == 2
     assert dimension-(n-D) == 3
+    assert 2*t < D
     return dict(length=n,code_dimension=k,required_distance=D,
                 conditional_supercode_dimension=dimension,
                 conditional_projected_rank=projected_rank,
                 conditional_third_support_weight=D,
+                error_budget=t,unique_error_representatives=True,
                 hypotheses=['code dimension k and minimum distance n-k+1',
                             'received rows independent modulo the code'],
                 evidence='integer instantiation of the handwritten dimension proof, no full matrix census')
