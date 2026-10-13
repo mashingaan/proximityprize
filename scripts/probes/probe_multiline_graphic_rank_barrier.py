@@ -18,11 +18,15 @@ def main():
     required_degree_sum = minimum_vertices*dual_distance
     available_degree_sum = 2*n
     minimum_edges = (required_degree_sum+1)//2
+    required_basis_nonzeros = r*dual_distance
+    minimum_maximum_column_weight = (required_basis_nonzeros+n-1)//n
     assert r == n-k-2 and r > 0
     assert required_degree_sum == 288230376151711743
     assert available_degree_sum == 2147483648
     assert required_degree_sum > available_degree_sum
     assert minimum_edges == 2**57 and n == 2**30
+    assert required_basis_nonzeros == 288230375614840830
+    assert minimum_maximum_column_weight == 268435456
     # At rate one half, the necessary inequality is k^2-1 <=4k.
     # It fails at k=5 and its difference increases by 2k-3 thereafter.
     assert 5**2-1-4*5 == 4
@@ -43,6 +47,9 @@ def main():
                          required_degree_sum=required_degree_sum,
                          available_degree_sum=available_degree_sum,
                          minimum_graphic_edge_count=minimum_edges,
+                         minimum_basis_nonzero_entries=required_basis_nonzeros,
+                         minimum_maximum_column_weight=minimum_maximum_column_weight,
+                         sparse_basis_inequality='r*(k+1) <= s*n for maximum column weight s',
                          ordinary_graphic_projection_possible=False,
                          necessary_inequality='(n-k-1)*(k+1) <= 2*n',
                          rate_half_maximum_graphic_length=8,
