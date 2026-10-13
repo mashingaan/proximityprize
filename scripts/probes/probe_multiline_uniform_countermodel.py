@@ -86,16 +86,53 @@ def certificate(p):
                 assert tuple((a+witness['gamma']*b) % p
                              for a,b in zip(line['intercept'],line['direction'])) == witness['head']
     assert 7*2 < 3*5
+    errors = [set(w['errors']) for w in witnesses]
+    for i,j in itertools.combinations(range(6),2):
+        assert 5 <= len(errors[i] | errors[j])+2
+    for i,j,k in itertools.combinations(range(6),3):
+        if not (k < 3 or i >= 3):
+            assert len(errors[i] | errors[j] | errors[k]) == 5
+    union_cube = sum(len(errors[i] | errors[j] | errors[k])
+                     for i,j,k in itertools.product(range(6),repeat=3))
+    assert union_cube == 912
+    assert 5*6**3 <= union_cube+4*2*6**2+5*6
+    assert 8**2*union_cube+(6*(8-2))**3 <= 8**3*6**3
     return dict(field=p,length=8,dimension=4,distance=5,error_budget=2,
                 generator_columns=columns,nonzero_four_column_minors=len(minors),
                 u0=u0,u1=u1,witnesses=witnesses,lines=lines,
+                ordered_collinear_triples=12,ordered_union_cube=union_cube,
                 literal_sponsor_length=False,canonical_sponsor_rs_code=False,
                 over_budget=False,scope='six witnesses in a fixed abstract MDS code')
 
 
+def weighted_certificate(base):
+    n = 1073741824
+    t = 221512373
+    private_weight = t//2
+    remainder = n-6*private_weight
+    weights = [private_weight]*6+[remainder//2,remainder-remainder//2]
+    # Any three column zeros are attainable and any four are impossible,
+    # as certified by the seventy nonzero minors of the base generator.
+    distance = n-sum(sorted(weights,reverse=True)[:3])
+    required_distance = 536870913
+    assert sum(weights) == n and distance >= required_distance
+    for witness in base['witnesses']:
+        assert sum(weights[x] for x in witness['errors']) <= t
+    assert 7*t < 3*required_distance
+    return dict(field=base['field'],length=n,dimension=4,block_weights=weights,
+                error_budget=t,actual_error_support=2*private_weight,
+                exact_distance=distance,required_distance=required_distance,
+                joint_core_cardinality=n-3*private_weight,
+                private_cardinality=private_weight,witness_count=6,
+                required_over_budget_witness_count=n+1,
+                over_budget=False,canonical_sponsor_rs_code=False,
+                scope='literal field and length, six witnesses only in a replicated abstract code')
+
+
 if __name__ == '__main__':
-    print(json.dumps(dict(certificates=[certificate(p) for p in
-                         (17,101,65537,2147483647,FIRST_PRIME)],
+    certificates = [certificate(p) for p in (17,101,65537,2147483647,FIRST_PRIME)]
+    print(json.dumps(dict(certificates=certificates,
+                         weighted_literal_parameter_certificate=weighted_certificate(certificates[-1]),
                          symbolic_hypothesis='prime characteristic greater than 15',
                          evidence='exact minors and witness verification, handwritten uniform proof'),
                      indent=2))
