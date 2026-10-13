@@ -23,10 +23,12 @@ jobs:
           use-github-cache: false
           use-mathlib-cache: false
       - uses: actions/cache/restore@v4
+        id: dependencies
         with:
           path: .lake
           key: formulation-${{ runner.os }}-${{ hashFiles('lean-toolchain', 'lake-manifest.json') }}-${{ github.run_id }}
           restore-keys: |
+            formulation-${{ runner.os }}-${{ hashFiles('lean-toolchain', 'lake-manifest.json') }}-
             incidence-build-${{ runner.os }}-${{ hashFiles('lean-toolchain', 'lake-manifest.json') }}-
             ${{ runner.os }}-lean-ci-${{ hashFiles('lake-manifest.json') }}-
       - name: Build existing sponsor formulation dependencies
@@ -37,17 +39,31 @@ jobs:
         run: |
           set -o pipefail
           lake env lean Research/ProximityPrize/Frontier/_PrizeShapeGrandChallengeRefutation.lean | tee formulation-axioms.log
+          lake env lean Research/ProximityPrize/Frontier/_PrizeShapeLowRateExactPins.lean | tee -a formulation-axioms.log
           python3 - <<'PY'
           from pathlib import Path
           import re
           log = Path('formulation-axioms.log').read_text()
           reports = re.findall(r'depends on axioms:\s*\[([^\]]*)\]', log)
-          assert len(reports) == 5
+          assert len(reports) == 11
+          assert 'firstPrime_rateEighth_deltaStar_eq_half' in log
           assert 'sorryAx' not in log
           for names in reports:
               assert set(x.strip() for x in names.split(',')) <= {'propext', 'Classical.choice', 'Quot.sound'}
-          print('Five existing sponsor formulation declarations axiom-clean')
+          print('Eleven existing formulation and low-rate declarations axiom-clean')
           PY
       - name: Stop workers
         if: always()
+        id: stop-workers
         run: bash scripts/ci-stop-lean.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sponsor-formulation-axioms
+          path: formulation-axioms.log
+          if-no-files-found: ignore
+      - uses: actions/cache/save@v4
+        if: always() && !cancelled() && steps.stop-workers.outcome == 'success'
+        with:
+          path: .lake
+          key: ${{ steps.dependencies.outputs.cache-primary-key }}
