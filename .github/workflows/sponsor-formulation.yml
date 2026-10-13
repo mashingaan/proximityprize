@@ -1,0 +1,50 @@
+name: Sponsor formulation axiom audit
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  formulation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      LEAN_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: leanprover/lean-action@v1.6.0
+        with:
+          auto-config: false
+          build: false
+          test: false
+          lint: false
+          use-github-cache: false
+          use-mathlib-cache: false
+      - uses: actions/cache/restore@v4
+        with:
+          path: .lake
+          key: formulation-${{ runner.os }}-${{ hashFiles('lean-toolchain', 'lake-manifest.json') }}-${{ github.run_id }}
+          restore-keys: |
+            incidence-build-${{ runner.os }}-${{ hashFiles('lean-toolchain', 'lake-manifest.json') }}-
+            ${{ runner.os }}-lean-ci-${{ hashFiles('lake-manifest.json') }}-
+      - name: Build existing sponsor formulation dependencies
+        run: |
+          ./scripts/lake-locked.sh exe cache get
+          ./scripts/lake-locked.sh build Research.ProximityPrize.Frontier._PrizeShapeGrandChallengeRefutation
+      - name: Audit exact formulation declarations
+        run: |
+          set -o pipefail
+          lake env lean Research/ProximityPrize/Frontier/_PrizeShapeGrandChallengeRefutation.lean | tee formulation-axioms.log
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          log = Path('formulation-axioms.log').read_text()
+          reports = re.findall(r'depends on axioms:\s*\[([^\]]*)\]', log)
+          assert len(reports) == 5
+          assert 'sorryAx' not in log
+          for names in reports:
+              assert set(x.strip() for x in names.split(',')) <= {'propext', 'Classical.choice', 'Quot.sound'}
+          print('Five existing sponsor formulation declarations axiom-clean')
+          PY
+      - name: Stop workers
+        if: always()
+        run: bash scripts/ci-stop-lean.sh
