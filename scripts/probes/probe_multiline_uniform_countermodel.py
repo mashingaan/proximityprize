@@ -119,11 +119,22 @@ def weighted_certificate(base):
     for witness in base['witnesses']:
         assert sum(weights[x] for x in witness['errors']) <= t
     assert 7*t < 3*required_distance
+    errors = [set(w['errors']) for w in base['witnesses']]
+    for i,j in itertools.combinations(range(6),2):
+        assert distance <= sum(weights[x] for x in errors[i] | errors[j])+t
+    union_cube = sum(sum(weights[x] for x in errors[i] | errors[j] | errors[k])
+                     for i,j,k in itertools.product(range(6),repeat=3))
+    assert union_cube == 912*private_weight
+    lower_slack = union_cube+4*t*6**2+distance*6-distance*6**3
+    upper_slack = n**3*6**3-n**2*union_cube-(6*(n-t))**3
+    assert lower_slack >= 0 and upper_slack >= 0
     return dict(field=base['field'],length=n,dimension=4,block_weights=weights,
                 error_budget=t,actual_error_support=2*private_weight,
                 exact_distance=distance,required_distance=required_distance,
                 joint_core_cardinality=n-3*private_weight,
                 private_cardinality=private_weight,witness_count=6,
+                ordered_union_cube=union_cube,lower_cube_slack=lower_slack,
+                upper_cube_slack=upper_slack,
                 required_over_budget_witness_count=n+1,
                 over_budget=False,canonical_sponsor_rs_code=False,
                 scope='literal field and length, six witnesses only in a replicated abstract code')
