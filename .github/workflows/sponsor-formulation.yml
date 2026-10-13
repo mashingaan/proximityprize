@@ -1,5 +1,8 @@
 name: Sponsor formulation axiom audit
 on:
+  push:
+    branches: [research/sponsor-finite-bracket]
+    paths: [.github/workflows/sponsor-formulation.yml]
   workflow_dispatch:
 permissions:
   contents: read
