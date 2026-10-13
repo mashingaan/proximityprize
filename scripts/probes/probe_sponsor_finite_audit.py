@@ -251,6 +251,27 @@ def refined_degeneracy_candidate():
                 evidence='conditional arithmetic candidate, no new canonical floor claimed')
 
 
+def quarter_cube_candidate():
+    """Exact arithmetic for the quarter-rate transfer, not a checked floor."""
+    m, distance = N+1, N-N//4+1
+    def slack(t):
+        return (N*N*distance*m**3+(m*(N-t))**3
+                -N**3*m**3-N*N*(67*t*m*m+distance*m))
+    lo, hi = 0, N//2
+    while lo < hi:
+        mid = (lo+hi+1)//2
+        if slack(mid) > 0:
+            lo = mid
+        else:
+            hi = mid-1
+    assert slack(lo) > 0 and slack(lo+1) <= 0
+    assert 129*lo < 64*distance
+    return dict(dimension=N//4,distance=distance,line_cap=64,max_error=lo,
+                candidate_floor=str(Fraction(lo+1,N)),strict_slack=slack(lo),
+                next_slack=slack(lo+1),
+                evidence='arithmetic candidate, canonical quarter-rate transfer not checked')
+
+
 if __name__ == '__main__':
     moments = [moment_frontier(r) for r in range(3,7)]
     assert moments[0]['max_error'] == 210683555
@@ -261,4 +282,5 @@ if __name__ == '__main__':
                           weighted_triples=weighted_frontier(),
                           exterior_line_triples=weighted_frontier(True),
                           constant_line_triples=constant_line_frontier(),
-                          refined_degeneracy_candidate=refined_degeneracy_candidate()),indent=2))
+                          refined_degeneracy_candidate=refined_degeneracy_candidate(),
+                          quarter_cube_candidate=quarter_cube_candidate()),indent=2))
