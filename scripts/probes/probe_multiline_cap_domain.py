@@ -24,6 +24,8 @@ def main():
     assert 3*occupancy == construction['distinct_scalars'] == n+5
     restricted_sizes = (occupancy-4,occupancy,occupancy)
     assert sum(restricted_sizes) == n+1 and min(restricted_sizes) > 3
+    restricted_mass_slack = (n+1)*2**128-construction['prime']
+    assert restricted_mass_slack > 0
     # Remove four scalar witnesses from line j=0, at the beginning of group 1.
     # Here height=1, so their scalar is -g^i. Source injectivity certifies
     # that no scalar in the other two families is removed.
@@ -57,6 +59,7 @@ def main():
                          upper_total_scalars=construction['distinct_scalars'],
                          exact_budget_subfamily_sizes=restricted_sizes,
                          exact_budget_subfamily_scalar_count=n+1,
+                         exact_budget_subfamily_mass_slack=restricted_mass_slack,
                          removed_line_zero_scalars=deleted,
                          upper_satisfies_cap_three=False,
                          generic_t_plus_one_cap_attained=True,
