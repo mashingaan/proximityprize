@@ -391,6 +391,41 @@ theorem triple_mass_lower_of_pair_union
   rw [hm] at hsum
   nlinarith [Nat.mul_le_mul_left t hB,Nat.mul_le_mul_left D hJ]
 
+/-- Distinct code-line parameters cannot share a joint agreement core whose
+complement is smaller than the code distance. This controls interactions
+between lines, independently of their individual occupancies. -/
+theorem distinct_code_lines_nonjoint_union_distance
+    {F Coord A : Type} [Field F] [Fintype Coord] [DecidableEq Coord]
+    [AddCommGroup A] [Module F A]
+    (C : Submodule F (Coord → A)) (d : ℕ)
+    (hC : ∀ z ∈ C, (∃ B : Finset Coord, B.card ≤ d ∧ ∀ x ∉ B, z x = 0) → z = 0)
+    (u0 u1 U D U' D' : Coord → A)
+    (hUC : U ∈ C) (hDC : D ∈ C) (hUC' : U' ∈ C) (hDC' : D' ∈ C)
+    (hne : (U,D) ≠ (U',D')) :
+    let Q := Finset.univ.filter (fun x => ¬ (u0 x = U x ∧ u1 x = D x))
+    let Q' := Finset.univ.filter (fun x => ¬ (u0 x = U' x ∧ u1 x = D' x))
+    d+1 ≤ (Q ∪ Q').card := by
+  classical
+  intro Q Q'
+  by_contra hn
+  have hcard : (Q ∪ Q').card ≤ d := by omega
+  have hpin : ∀ x ∉ Q ∪ Q', U x = U' x ∧ D x = D' x := by
+    intro x hx
+    have hxQ : x ∉ Q := fun h => hx (Finset.mem_union_left _ h)
+    have hxQ' : x ∉ Q' := fun h => hx (Finset.mem_union_right _ h)
+    have hp : u0 x = U x ∧ u1 x = D x := by simpa [Q] using hxQ
+    have hp' : u0 x = U' x ∧ u1 x = D' x := by simpa [Q'] using hxQ'
+    exact ⟨hp.1.symm.trans hp'.1,hp.2.symm.trans hp'.2⟩
+  have hzU : U-U' = 0 := hC (U-U') (C.sub_mem hUC hUC')
+    ⟨Q ∪ Q',hcard,fun x hx => by
+      change U x-U' x = 0
+      exact sub_eq_zero.mpr (hpin x hx).1⟩
+  have hzD : D-D' = 0 := hC (D-D') (C.sub_mem hDC hDC')
+    ⟨Q ∪ Q',hcard,fun x hx => by
+      change D x-D' x = 0
+      exact sub_eq_zero.mpr (hpin x hx).2⟩
+  exact hne (Prod.ext (sub_eq_zero.mp hzU) (sub_eq_zero.mp hzD))
+
 end ProximityGap.IncidenceConstantLineCap
 
 #print axioms ProximityGap.IncidenceConstantLineCap.line_agreement_mass
@@ -400,3 +435,4 @@ end ProximityGap.IncidenceConstantLineCap
 #print axioms ProximityGap.IncidenceConstantLineCap.collinearTriples_card_le_square_of_line_cap_three
 
 #print axioms ProximityGap.IncidenceConstantLineCap.bad_witness_line_cap_sixty_four
+#print axioms ProximityGap.IncidenceConstantLineCap.distinct_code_lines_nonjoint_union_distance
