@@ -41,6 +41,13 @@ def main():
     assert len(edges) == 8 and min(cuts) == 5
     assert len(edges)-6 == 2  # The matching K dimension is six.
     assert (2+1)*5 <= 2*len(edges)
+    # This sends the explicit quotient certificate's three projected column
+    # classes (1,0),(1,1),(1,2) to scaled incidence columns of that triangle.
+    row_transform = ((2,-2),(-2,1))
+    mapped = [tuple(sum(a*b for a,b in zip(row,(1,label))) for row in row_transform)
+              for label in (0,1,2)]
+    assert mapped == [(2,-2),(0,-1),(-2,0)]
+    assert 2*1-(-2)*(-2) == -2
     print(json.dumps(dict(length=n,code_dimension=k,
                          projected_rank=r,required_dual_distance=dual_distance,
                          minimum_nonisolated_vertices=minimum_vertices,
@@ -54,6 +61,8 @@ def main():
                          necessary_inequality='(n-k-1)*(k+1) <= 2*n',
                          rate_half_maximum_graphic_length=8,
                          boundary_graph_edges=edges,boundary_graph_minimum_cut=min(cuts),
+                         boundary_quotient_row_transform=row_transform,
+                         boundary_scaled_incidence_classes=mapped,
                          hypotheses=['code dimension k and distance n-k+1',
                                      'received rows independent modulo code',
                                      'projected matrix row-equivalent to oriented incidence with nonzero column scaling'],
