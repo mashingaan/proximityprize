@@ -24,6 +24,7 @@ jobs:
           python3 scripts/probes/probe_multiline_uniform_countermodel.py
           python3 scripts/probes/probe_multiline_overbudget.py
           python3 scripts/probes/probe_multiline_quotient_extremum.py
+          python3 scripts/probes/probe_multiline_graphic_countermodel.py
   kernel:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
