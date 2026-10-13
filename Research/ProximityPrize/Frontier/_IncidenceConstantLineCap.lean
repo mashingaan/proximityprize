@@ -144,6 +144,75 @@ theorem bad_witness_line_cap_three
   have hmul := Nat.mul_le_mul_right (Q.card-t) hlarge
   omega
 
+/-- A larger constant line cap for the rate-quarter cube budget. -/
+theorem bad_witness_line_cap_sixty_four
+    {F I Coord A : Type} [Field F] [DecidableEq I]
+    [Fintype Coord] [DecidableEq Coord] [AddCommGroup A] [Module F A]
+    (gamma : I → F) (w : I → (Coord → A)) (hinj : Function.Injective gamma)
+    (S : Finset I) (C : Submodule F (Coord → A)) (d t : ℕ)
+    (hsize : t+1 < S.card) (ht : 129*t < 64*(d+1))
+    (hC : ∀ z ∈ C, (∃ B : Finset Coord, B.card ≤ d ∧ ∀ x ∉ B, z x = 0) → z = 0)
+    (T : I → Finset Coord) (u0 u1 : Coord → A)
+    (hwC : ∀ i ∈ S, w i ∈ C)
+    (hcompl : ∀ i ∈ S, (T i)ᶜ.card ≤ t)
+    (hwag : ∀ i ∈ S, ∀ x ∈ T i, w i x = u0 x + gamma i • u1 x)
+    (hno : ∀ i ∈ S, ¬ ∃ f0 ∈ C, ∃ f1 ∈ C,
+      ∀ x ∈ T i, f0 x = u0 x ∧ f1 x = u1 x)
+    (U D : Coord → A) : (S.filter (OnLine gamma w U D)).card ≤ 64 := by
+  classical
+  let B := S.filter (OnLine gamma w U D)
+  change B.card ≤ 64
+  by_contra hn
+  have hlarge : 65 ≤ B.card := by omega
+  have hBsub : B ⊆ S := Finset.filter_subset _ _
+  obtain ⟨a,ha,b,hb,hab⟩ := Finset.one_lt_card.mp (by omega : 1 < B.card)
+  have haL := (Finset.mem_filter.mp ha).2
+  have hbL := (Finset.mem_filter.mp hb).2
+  obtain ⟨hUC,hDC⟩ := params_mem_code_of_two gamma w hinj C hab haL hbL
+    (hwC a (hBsub ha)) (hwC b (hBsub hb))
+  have hcap : B.card ≤ t+1 :=
+    bad_witness_line_cap t gamma w hinj S C T u0 u1 hwC hcompl hwag hno U D
+  have hout : ∃ c ∈ S, c ∉ B := by
+    by_contra h
+    push Not at h
+    have hc := Finset.card_le_card (show S ⊆ B from fun c hc => h c hc)
+    omega
+  obtain ⟨c,hc,hcB⟩ := hout
+  let Q := Finset.univ.filter (fun x => ¬ (u0 x = U x ∧ u1 x = D x))
+  have hdist : d+1 ≤ Q.card + t := by
+    let z := w c - (U + gamma c • D)
+    have hzC : z ∈ C := C.sub_mem (hwC c hc) (C.add_mem hUC (C.smul_mem _ hDC))
+    have hvan : ∀ x ∉ Q ∪ (T c)ᶜ, z x = 0 := by
+      intro x hx
+      have hxQ : x ∉ Q := fun h => hx (Finset.mem_union.mpr (Or.inl h))
+      have hxT : x ∈ T c := by
+        by_contra hnT
+        exact hx (Finset.mem_union.mpr (Or.inr (Finset.mem_compl.mpr hnT)))
+      have hj : u0 x = U x ∧ u1 x = D x := by simpa [Q] using hxQ
+      change w c x - (U x + gamma c • D x) = 0
+      rw [hwag c hc x hxT,hj.1,hj.2,sub_self]
+    have hbig : d < (Q ∪ (T c)ᶜ).card := by
+      by_contra h
+      have hz := hC z hzC ⟨Q ∪ (T c)ᶜ,by omega,hvan⟩
+      have he : OnLine gamma w U D c := sub_eq_zero.mp hz
+      exact hcB (Finset.mem_filter.mpr ⟨hc,he⟩)
+    have hu := Finset.card_union_le Q (T c)ᶜ
+    have hcT := hcompl c hc
+    omega
+  have hmass := line_agreement_mass gamma w hinj B T u0 u1 U D
+    (fun i hi => (Finset.mem_filter.mp hi).2) (fun i hi => hwag i (hBsub hi))
+  change B.card * Q.card ≤ Q.card + ∑ i ∈ B, (T i)ᶜ.card at hmass
+  have herr : (∑ i ∈ B, (T i)ᶜ.card) ≤ B.card * t := by
+    simpa only [Finset.sum_const,smul_eq_mul] using
+      Finset.sum_le_sum (fun i hi => hcompl i (hBsub hi))
+  have hqt : t ≤ Q.card := by omega
+  have hsplit := Nat.sub_add_cancel hqt
+  have hgap : B.card * (Q.card-t) ≤ (Q.card-t)+t := by
+    rw [← hsplit,Nat.mul_add] at hmass
+    omega
+  have hmul := Nat.mul_le_mul_right (Q.card-t) hlarge
+  omega
+
 /-- Every distinct pair of canonical bad witnesses has a large error union.
 An outside witness turns the pair into a noncollinear distance certificate. -/
 theorem bad_witness_pair_union_distance
@@ -329,3 +398,5 @@ end ProximityGap.IncidenceConstantLineCap
 #print axioms ProximityGap.IncidenceConstantLineCap.triple_mass_lower_of_pair_union
 #print axioms ProximityGap.IncidenceConstantLineCap.bad_witness_line_cap_three
 #print axioms ProximityGap.IncidenceConstantLineCap.collinearTriples_card_le_square_of_line_cap_three
+
+#print axioms ProximityGap.IncidenceConstantLineCap.bad_witness_line_cap_sixty_four
