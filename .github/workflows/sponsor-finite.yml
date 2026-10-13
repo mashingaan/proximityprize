@@ -20,6 +20,7 @@ jobs:
           python3 scripts/probes/probe_incidence_full_scale_cores.py
           python3 scripts/probes/probe_sponsor_finite_audit.py
           python3 scripts/probes/probe_multiline_abstract.py
+          python3 scripts/probes/probe_multiline_rank_two.py
   kernel:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
