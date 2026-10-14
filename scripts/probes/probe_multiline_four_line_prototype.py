@@ -65,7 +65,7 @@ def main():
                          maximum_nonzero_difference_words_per_coordinate=max(counts),
                          selected_error_incidence_per_coordinate=4,
                          arbitrary_weight_obstruction='6*D <= 13*t',
-                         weight_scope='all nonnegative coordinate multiplicities in this edge-root pattern',
+                         weight_scope='nonnegative multiplicities preserving all 36 nonzero differences, including all positive multiplicities',
                          conclusion='dependent four-line geometry exists here but its distance is insufficient',
                          canonical_sponsor_rs_code=False,new_lean_theorem=False,
                          threshold_improvement=False),indent=2))
