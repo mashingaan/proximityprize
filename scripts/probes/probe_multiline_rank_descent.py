@@ -2,7 +2,7 @@
 import itertools
 import json
 
-from probe_multiline_uniform_countermodel import FIRST_PRIME
+from probe_multiline_uniform_countermodel import FIRST_PRIME,certificate as two_line_certificate
 from probe_multiline_shortening_constraints import rank
 
 
@@ -38,6 +38,27 @@ def main():
         S = [x for x,value in enumerate(e) if value == 0]
         base = [[generator[x] for x in S]]
         assert any(rank(base+[[row[x] for x in S]],FIRST_PRIME) > 1 for row in (u0,u1))
+    base = two_line_certificate(FIRST_PRIME)
+    rank_four_errors = []
+    for witness in base['witnesses']:
+        word = [sum(a*b for a,b in zip(witness['head'],column)) % FIRST_PRIME
+                for column in base['generator_columns']]
+        error = [(a+witness['gamma']*b-c) % FIRST_PRIME
+                 for a,b,c in zip(base['u0'],base['u1'],word)]
+        assert sum(value != 0 for value in error) == 2
+        rank_four_errors.append(error)
+    assert rank(rank_four_errors,FIRST_PRIME) == 4
+    pencil_supports = [set().union(*(set(x for x,value in enumerate(error) if value)
+                                     for error in rank_four_errors[start:start+3]))
+                       for start in (0,3)]
+    assert len(pencil_supports[0] | pencil_supports[1]) == 6
+    assert not (pencil_supports[0] & pencil_supports[1])
+    rank_four = dict(field=FIRST_PRIME,length=8,code_dimension=4,distance=5,
+                     error_budget=2,witness_count=6,error_span_rank=4,
+                     three_head_line_partition=[[1,2,3],[4,5,6]],
+                     support_union_size=6,support_intersection_size=0,
+                     overlap_upper_bound=3*2-5-1,
+                     universal_classification='six rank-four witnesses must partition into two three-head lines when 7*t<3*D')
     n,D,t = 1073741824,536870913,221512373
     target = n+1
     bounds = {1:1,2:3,3:4}
@@ -48,6 +69,7 @@ def main():
         bounds[R] = bounds[R-1]*minimum_support//(minimum_support-t)
     assert bounds[R-1] < target <= bounds[R]
     print(json.dumps(dict(rank_three_attaining_certificate=small,
+                         rank_four_attaining_certificate=rank_four,
                          first_field_nonjoint_rank_checks=True,
                          literal_length=n,distance=D,error_budget=t,
                          least_overbudget_size=target,
