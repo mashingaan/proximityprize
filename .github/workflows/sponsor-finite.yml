@@ -37,6 +37,7 @@ jobs:
           python3 scripts/probes/probe_multiline_minimal_dependency.py
           python3 scripts/probes/probe_multiline_relation_core.py
           python3 scripts/probes/probe_multiline_four_line_prototype.py
+          python3 scripts/probes/probe_multiline_dependency_girth.py
   kernel:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
