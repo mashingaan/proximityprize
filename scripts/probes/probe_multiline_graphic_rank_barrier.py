@@ -27,6 +27,15 @@ def main():
     assert minimum_edges == 2**57 and n == 2**30
     assert required_basis_nonzeros == 288230375614840830
     assert minimum_maximum_column_weight == 268435456
+    # In systematic form [I_r | A], each row contributes one pivot entry.
+    # Dual distance k+1 forces at least k entries among k+2 columns of A.
+    systematic_columns = n-r
+    systematic_minimum_nonzeros = r*k
+    systematic_maximum_zeros = 2*r
+    systematic_heavy_column = (systematic_minimum_nonzeros+systematic_columns-1)//systematic_columns
+    assert systematic_columns == k+2
+    assert systematic_heavy_column == 536870909
+    assert systematic_maximum_zeros == 1073741820
     # At rate one half, the necessary inequality is k^2-1 <=4k.
     # It fails at k=5 and its difference increases by 2k-3 thereafter.
     assert 5**2-1-4*5 == 4
@@ -56,6 +65,11 @@ def main():
                          minimum_graphic_edge_count=minimum_edges,
                          minimum_basis_nonzero_entries=required_basis_nonzeros,
                          minimum_maximum_column_weight=minimum_maximum_column_weight,
+                         systematic_nonpivot_columns=systematic_columns,
+                         systematic_minimum_nonzero_entries=systematic_minimum_nonzeros,
+                         systematic_maximum_zero_entries=systematic_maximum_zeros,
+                         systematic_minimum_maximum_column_weight=systematic_heavy_column,
+                         systematic_maximum_zeros_per_row=2,
                          sparse_basis_inequality='r*(k+1) <= s*n for maximum column weight s',
                          ordinary_graphic_projection_possible=False,
                          necessary_inequality='(n-k-1)*(k+1) <= 2*n',
