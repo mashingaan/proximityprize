@@ -41,6 +41,19 @@ def main():
     distance_upper = sum(value != 0 for value in distance_word)
     assert distance_upper == 39 and rank(code+[distance_word],p) == 5
     assert 7*18 >= 3*distance_upper
+    difference_words = []
+    for i in range(4):
+        for j in range(4):
+            if i == j:
+                continue
+            for gamma in range(3*i+1,3*i+4):
+                value = [(a+gamma*b-d-gamma*e) % p
+                         for a,b,d,e in zip(words[2*i],words[2*i+1],words[2*j],words[2*j+1])]
+                assert any(value) and rank(code+[value],p) == 5
+                difference_words.append(value)
+    counts = [sum(row[x] != 0 for row in difference_words) for x in range(54)]
+    assert len(difference_words) == 36 and max(counts) <= 26
+    assert all(sum(row[x] != 0 for row in errors) == 4 for x in range(54))
     print(json.dumps(dict(field=p,length=54,code_dimension=5,witness_count=12,
                          error_budget=18,error_span_rank=7,
                          scalar_groups=[list(range(3*i+1,3*i+4)) for i in range(4)],
@@ -48,6 +61,11 @@ def main():
                          distance_upper_bound=distance_upper,distance_witness=distance_word,
                          exact_minimum_distance='not computed because an upper certificate already rejects the target regime',
                          cap_domain_7t_less_3D_possible=False,
+                         averaging_codewords=36,
+                         maximum_nonzero_difference_words_per_coordinate=max(counts),
+                         selected_error_incidence_per_coordinate=4,
+                         arbitrary_weight_obstruction='6*D <= 13*t',
+                         weight_scope='all nonnegative coordinate multiplicities in this edge-root pattern',
                          conclusion='dependent four-line geometry exists here but its distance is insufficient',
                          canonical_sponsor_rs_code=False,new_lean_theorem=False,
                          threshold_improvement=False),indent=2))
