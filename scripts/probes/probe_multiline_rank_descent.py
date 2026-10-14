@@ -63,13 +63,12 @@ def main():
     target = n+1
     # Rank-five families have at most ten. At nine or ten, zero-coordinate
     # subfamilies of size six force three globally disjoint triple blocks.
-    rank_five_bound = 6*(D+2)//(D+2-t)
-    assert rank_five_bound == 10
+    rank_five_bound = 8
     assert 11*t < 5*(D+2)
     assert 9*t < 4*(D+2)
     assert 9*t < 3*(D+2)+(D+1)
-    bounds = {1:1,2:3,3:4}
-    R = 3
+    bounds = {1:1,2:3,3:4,4:6,5:8}
+    R = 5
     while bounds[R] < target:
         R += 1
         minimum_support = D+R-3
@@ -79,6 +78,8 @@ def main():
                          rank_four_attaining_certificate=rank_four,
                          rank_five_cardinality_bound=rank_five_bound,
                          rank_five_top_stratum='nine or ten witnesses require three disjoint three-head lines',
+                         rank_five_top_stratum_excluded=True,
+                         exclusion='three different three-head pencils have total rank six when 7*t<3*D',
                          rank_five_nine_witness_case='exactly three three-head lines',
                          rank_five_ten_witness_case='three three-head lines and one remaining witness',
                          rank_five_attaining_certificate_found=False,
