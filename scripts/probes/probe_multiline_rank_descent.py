@@ -61,6 +61,13 @@ def main():
                      universal_classification='six rank-four witnesses must partition into two three-head lines when 7*t<3*D')
     n,D,t = 1073741824,536870913,221512373
     target = n+1
+    # Rank-five families have at most ten. At nine or ten, zero-coordinate
+    # subfamilies of size six force three globally disjoint triple blocks.
+    rank_five_bound = 6*(D+2)//(D+2-t)
+    assert rank_five_bound == 10
+    assert 11*t < 5*(D+2)
+    assert 9*t < 4*(D+2)
+    assert 9*t < 3*(D+2)+(D+1)
     bounds = {1:1,2:3,3:4}
     R = 3
     while bounds[R] < target:
@@ -70,6 +77,11 @@ def main():
     assert bounds[R-1] < target <= bounds[R]
     print(json.dumps(dict(rank_three_attaining_certificate=small,
                          rank_four_attaining_certificate=rank_four,
+                         rank_five_cardinality_bound=rank_five_bound,
+                         rank_five_top_stratum='nine or ten witnesses require three disjoint three-head lines',
+                         rank_five_nine_witness_case='exactly three three-head lines',
+                         rank_five_ten_witness_case='three three-head lines and one remaining witness',
+                         rank_five_attaining_certificate_found=False,
                          first_field_nonjoint_rank_checks=True,
                          literal_length=n,distance=D,error_budget=t,
                          least_overbudget_size=target,
