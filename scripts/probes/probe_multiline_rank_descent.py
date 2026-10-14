@@ -7,7 +7,7 @@ from probe_multiline_shortening_constraints import rank
 
 
 def certificate(p):
-    u0,u1 = (-1,-2,-3,1,1),(1,1,1,0,0)
+    u0,u1 = (-1,-2,-3,0,0),(1,1,1,0,0)
     generator = (3,2,1,1,1)
     errors = []
     for gamma in (1,2,3,4):
@@ -32,7 +32,7 @@ def main():
     # Exhaustive explaining coefficients here deliberately use the small field.
     small = certificate(17)
     # Over the first field the same nonjointness is independently a rank test.
-    u0,u1,generator = (-1,-2,-3,1,1),(1,1,1,0,0),(3,2,1,1,1)
+    u0,u1,generator = (-1,-2,-3,0,0),(1,1,1,0,0),(3,2,1,1,1)
     for gamma in (1,2,3,4):
         e = [a+gamma*b-int(gamma == 4)*c for a,b,c in zip(u0,u1,generator)]
         S = [x for x,value in enumerate(e) if value == 0]
