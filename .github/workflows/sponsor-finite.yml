@@ -29,6 +29,7 @@ jobs:
           python3 scripts/probes/probe_multiline_cap_domain.py
           python3 scripts/probes/probe_multiline_graphic_rank_barrier.py
           python3 scripts/probes/probe_multiline_rank_shortening.py
+          python3 scripts/probes/probe_multiline_disjoint_span.py
   kernel:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
