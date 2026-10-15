@@ -412,10 +412,12 @@ theorem affine_head_relation_shortening {F I Coord : Type*} [Field F]
     intro w hw
     simp only [Set.mem_insert_iff, Set.mem_singleton_iff] at hw
     rcases hw with rfl | rfl
-    · exact (C ⊔ P).sub_mem (le_sup_right (Submodule.subset_span (by simp)))
-        (le_sup_left hU)
-    · exact (C ⊔ P).sub_mem (le_sup_right (Submodule.subset_span (by simp)))
-        (le_sup_left hV)
+    · exact (C ⊔ P).sub_mem
+        ((show P ≤ C ⊔ P from le_sup_right) (Submodule.subset_span (by simp)))
+        ((show C ≤ C ⊔ P from le_sup_left) hU)
+    · exact (C ⊔ P).sub_mem
+        ((show P ≤ C ⊔ P from le_sup_right) (Submodule.subset_span (by simp)))
+        ((show C ≤ C ⊔ P from le_sup_left) hV)
   exact projected_relation_shortening C P _ _ D hDpos hP hW
     (fun i => affine_error_plane_support u₀ u₁ (U i) (V i)) hactive hdistance
 
