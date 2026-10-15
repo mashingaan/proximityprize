@@ -154,6 +154,7 @@ theorem no_large_external_family_of_triple_anchor
   have hlo := agreement_cube_lower_uniform_of_counts T Q 315358539 536870911
     332268561 (s*r) (s*v) hinside htotal (by exact_mod_cast hq) hmu hnu hv horder
   rw [hlength] at hlo
+  norm_num only [Nat.cast_ofNat] at hlo
   have hnormal : (332268561 : ℝ)*(s*r)^3 +
       ((1073741824 : ℝ)-332268561)*(s*v)^3 =
       (332268561*r^3+741473263*v^3)*s^3 := by ring
