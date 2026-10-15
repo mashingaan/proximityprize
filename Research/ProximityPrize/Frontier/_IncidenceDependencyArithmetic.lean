@@ -303,6 +303,27 @@ theorem relation_core_dimension {F I Coord : Type*} [Field F]
   rw [hrange, hkdim, Module.finrank_pi_fintype] at hrn
   exact hrn
 
+/-- Global multi-line rank/shortening inequality in projected-kernel dimensions. -/
+theorem projected_relation_shortening {F I Coord : Type*} [Field F]
+    [Fintype I] [Fintype Coord] [DecidableEq I] [DecidableEq Coord]
+    (C P : Submodule F (Coord → F))
+    (W : I → Submodule F (Coord → F)) (Q : I → Finset Coord)
+    (D : ℕ) (hDpos : 0 < D) (hP : Module.finrank F P ≤ 2)
+    (hW : ∀ i, W i ≤ C ⊔ P)
+    (hsupport : ∀ i, ∀ v ∈ W i, ∀ x ∉ Q i, v x = 0)
+    (hactive : Module.finrank F (LinearMap.ker (familySum W)) + 3 ≤
+      ∑ i, Module.finrank F (LinearMap.range (relationProjection W i)))
+    (hdistance : ∀ v ∈ C, ∀ B : Finset Coord, B.card < D →
+      (∀ x ∉ B, v x = 0) → v = 0) :
+    (∑ i, Module.finrank F (LinearMap.range (relationProjection W i))) + D ≤
+      (sharedSupport Q).card + 3 +
+        Module.finrank F (LinearMap.ker (familySum W)) := by
+  have hid := relation_core_dimension W
+  have hrank : 3 ≤ Module.finrank F (Submodule.span F (relationComponents W)) := by
+    omega
+  have hs := relation_core_shortening C P W Q D hDpos hP hW hsupport hrank hdistance
+  omega
+
 /-- Universal coordinate-count inequality for a minimal multi-line dependency. -/
 theorem coordinate_count_bound (L a k : ℤ)
     (hL : 4 ≤ L) (ha : 1 ≤ a) (haL : a ≤ L)
@@ -381,3 +402,4 @@ end ProximityGap.IncidenceDependencyArithmetic
 #print axioms ProximityGap.IncidenceDependencyArithmetic.relation_core_shared_support
 #print axioms ProximityGap.IncidenceDependencyArithmetic.relation_core_shortening
 #print axioms ProximityGap.IncidenceDependencyArithmetic.relation_core_dimension
+#print axioms ProximityGap.IncidenceDependencyArithmetic.projected_relation_shortening
