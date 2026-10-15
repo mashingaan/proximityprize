@@ -81,7 +81,7 @@ theorem two_region_cube_lower
   nlinarith
 
 noncomputable def agreementDegree {I Coord : Type} [Fintype I]
-    (T : I → Finset Coord) (x : Coord) : ℕ := by
+    [DecidableEq Coord] (T : I → Finset Coord) (x : Coord) : ℕ := by
   classical
   exact (Finset.univ.filter (fun i => x ∈ T i)).card
 
