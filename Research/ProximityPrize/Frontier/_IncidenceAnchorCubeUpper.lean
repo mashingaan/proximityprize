@@ -168,8 +168,12 @@ theorem no_large_external_family_of_triple_anchor
   rw [hlength] at hu
   norm_num at hu
   have hupper : (∑ x, (agreementDegree T x : ℝ)^3) ≤
-      536870911*s^3 + 886049496*s^2 + 536870913*s := by exact_mod_cast hu
-  have hslarge : (1073741822 : ℝ) ≤ s := by exact_mod_cast hsize
+      536870911*s^3 + 886049496*s^2 + 536870913*s := by
+    dsimp [s]
+    exact_mod_cast hu
+  have hslarge : (1073741822 : ℝ) ≤ s := by
+    dsimp [s]
+    exact_mod_cast hsize
   have hspos : 0 < s := by linarith
   have hp : (886049497 : ℝ)*s ≤ s^2 := by
     have he := mul_le_mul_of_nonneg_right (show (886049497 : ℝ) ≤ s by linarith) hs
