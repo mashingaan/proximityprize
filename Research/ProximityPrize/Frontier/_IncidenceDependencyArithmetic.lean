@@ -71,7 +71,8 @@ theorem quotient_shortening_bound {F Coord : Type*} [Field F]
   classical
   let W : Submodule F (Coord → F) := (LinearMap.ker q).map V.subtype
   have hdim : Module.finrank F W = Module.finrank F (LinearMap.ker q) := by
-    exact Submodule.finrank_map_subtype_eq _
+    dsimp [W]
+    rw [Submodule.finrank_map_subtype_eq]
   have hrn := LinearMap.finrank_range_add_finrank_ker q
   have hrange : Module.finrank F (LinearMap.range q) ≤ 2 := by
     refine le_trans (Submodule.finrank_le _) ?_
@@ -91,6 +92,35 @@ theorem quotient_shortening_bound {F Coord : Type*} [Field F]
     exact hsupport w.val w.property
   have hshort := shortened_subspace_bound C W D hDpos hWC S hWS
     (Submodule.exists_mem_ne_zero_of_ne_bot hWbot) hdistance
+  omega
+
+/-- The shortening bound in the received-space form used by bad witnesses. -/
+theorem received_space_shortening_bound {F Coord : Type*} [Field F]
+    [Fintype Coord] [DecidableEq Coord]
+    (C V P : Submodule F (Coord → F)) (D : ℕ) (hDpos : 0 < D)
+    (hVP : V ≤ C ⊔ P) (hP : Module.finrank F P ≤ 2)
+    (S : Finset Coord) (hsupport : ∀ v ∈ V, ∀ x ∉ S, v x = 0)
+    (hrank : 3 ≤ Module.finrank F V)
+    (hdistance : ∀ v ∈ C, ∀ B : Finset Coord, B.card < D →
+      (∀ x ∉ B, v x = 0) → v = 0) :
+    Module.finrank F V + D ≤ S.card + 3 := by
+  classical
+  have hid := Submodule.finrank_sup_add_finrank_inf_eq V C
+  have hCP := Submodule.finrank_sup_add_finrank_inf_eq C P
+  have hle : Module.finrank F (V ⊔ C) ≤ Module.finrank F (C ⊔ P) :=
+    Submodule.finrank_mono (sup_le hVP le_sup_left)
+  have hdim : Module.finrank F V ≤ Module.finrank F (V ⊓ C) + 2 := by
+    omega
+  have hpos : 0 < Module.finrank F (V ⊓ C) := by omega
+  have hbot : V ⊓ C ≠ ⊥ := by
+    intro h
+    rw [h] at hpos
+    simpa using hpos
+  have hs : ∀ v ∈ V ⊓ C, ∀ x ∉ S, v x = 0 := by
+    intro v hv
+    exact hsupport v hv.1
+  have hb := shortened_subspace_bound C (V ⊓ C) D hDpos inf_le_right S hs
+    (Submodule.exists_mem_ne_zero_of_ne_bot hbot) hdistance
   omega
 
 /-- Universal coordinate-count inequality for a minimal multi-line dependency. -/
@@ -166,3 +196,4 @@ end ProximityGap.IncidenceDependencyArithmetic
 #print axioms ProximityGap.IncidenceDependencyArithmetic.dependency_from_coordinate_ledger
 #print axioms ProximityGap.IncidenceDependencyArithmetic.literal_dependency_excluded
 #print axioms ProximityGap.IncidenceDependencyArithmetic.quotient_shortening_bound
+#print axioms ProximityGap.IncidenceDependencyArithmetic.received_space_shortening_bound
