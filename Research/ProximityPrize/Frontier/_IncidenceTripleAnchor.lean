@@ -80,6 +80,44 @@ theorem two_region_cube_lower
   have hall := mul_nonneg (sq_nonneg nu) (sub_nonneg.mpr htotal)
   nlinarith
 
+/-- A support upper bound suffices for one fixed pair of cubic tangents. -/
+theorem uniform_two_region_cube_lower
+    {Coord : Type} [Fintype Coord] [DecidableEq Coord]
+    (Q : Finset Coord) (d : Coord → ℝ) (qcap mu nu : ℝ)
+    (hd : ∀ x, 0 ≤ d x) (hnu : 0 ≤ nu) (horder : nu ≤ mu)
+    (hcap : (Q.card : ℝ) ≤ qcap)
+    (hinside : qcap * mu ≤ ∑ x ∈ Q, d x)
+    (htotal : qcap * mu + ((Fintype.card Coord : ℝ)-qcap) * nu ≤ ∑ x, d x) :
+    qcap * mu^3 + ((Fintype.card Coord : ℝ)-qcap) * nu^3 ≤
+      ∑ x, (d x)^3 := by
+  classical
+  have hmu : 0 ≤ mu := hnu.trans horder
+  have htangent : ∀ x r, 0 ≤ r → 3*r^2*d x - 2*r^3 ≤ (d x)^3 := by
+    intro x r hr
+    have hp := mul_nonneg (sq_nonneg (d x-r))
+      (add_nonneg (hd x) (mul_nonneg (by norm_num : (0 : ℝ) ≤ 2) hr))
+    nlinarith
+  have hleft := Finset.sum_le_sum (fun x (_ : x ∈ Q) => htangent x mu hmu)
+  have hright := Finset.sum_le_sum (fun x (_ : x ∈ Qᶜ) => htangent x nu hnu)
+  simp only [Finset.sum_sub_distrib, ← Finset.mul_sum,
+    Finset.sum_const, nsmul_eq_mul] at hleft hright
+  have hpart : (Qᶜ.card : ℝ) + (Q.card : ℝ) = Fintype.card Coord := by
+    exact_mod_cast Finset.card_compl_add_card Q
+  have hqc : (Qᶜ.card : ℝ) = (Fintype.card Coord : ℝ) - Q.card := by linarith
+  rw [hqc] at hright
+  rw [← Finset.sum_add_sum_compl Q d] at htotal
+  rw [← Finset.sum_add_sum_compl Q (fun x => (d x)^3)]
+  have hsq : 0 ≤ mu^2 - nu^2 := by
+    nlinarith [mul_nonneg (sub_nonneg.mpr horder) (add_nonneg hmu hnu)]
+  have hcube : 0 ≤ mu^3 - nu^3 := by
+    have hp := mul_nonneg (sub_nonneg.mpr horder)
+      (show 0 ≤ mu^2 + mu*nu + nu^2 by positivity)
+    nlinarith
+  have hin := mul_nonneg hsq (sub_nonneg.mpr hinside)
+  have hall := mul_nonneg (sq_nonneg nu) (sub_nonneg.mpr htotal)
+  have hslack := mul_nonneg (sub_nonneg.mpr hcap) hcube
+  nlinarith
+
 noncomputable def agreementDegree {I Coord : Type} [Fintype I]
     [DecidableEq Coord] (T : I → Finset Coord) (x : Coord) : ℕ := by
   classical
@@ -185,3 +223,4 @@ end ProximityGap.IncidenceTripleAnchor
 #print axioms ProximityGap.IncidenceTripleAnchor.agreement_mass_on_region
 #print axioms ProximityGap.IncidenceTripleAnchor.agreement_cube_lower_of_counts
 #print axioms ProximityGap.IncidenceTripleAnchor.external_family_two_region_cube
+#print axioms ProximityGap.IncidenceTripleAnchor.uniform_two_region_cube_lower
