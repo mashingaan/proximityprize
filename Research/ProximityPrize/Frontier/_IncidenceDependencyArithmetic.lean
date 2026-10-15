@@ -56,6 +56,43 @@ theorem shortened_subspace_bound {F Coord : Type*} [Field F]
   rw [hcard, hBcard] at hdim
   omega
 
+/-- A two-dimensional quotient loses at most two dimensions before shortening.
+The quotient only needs to be defined on the supported error space. -/
+theorem quotient_shortening_bound {F Coord : Type*} [Field F]
+    [Fintype Coord] [DecidableEq Coord]
+    (C V : Submodule F (Coord → F)) (D : ℕ) (hDpos : 0 < D)
+    (q : V →ₗ[F] (Fin 2 → F))
+    (hkernel : ∀ v : V, q v = 0 → v.val ∈ C)
+    (S : Finset Coord) (hsupport : ∀ v ∈ V, ∀ x ∉ S, v x = 0)
+    (hrank : 3 ≤ Module.finrank F V)
+    (hdistance : ∀ v ∈ C, ∀ B : Finset Coord, B.card < D →
+      (∀ x ∉ B, v x = 0) → v = 0) :
+    Module.finrank F V + D ≤ S.card + 3 := by
+  classical
+  let W : Submodule F (Coord → F) := (LinearMap.ker q).map V.subtype
+  have hdim : Module.finrank F W = Module.finrank F (LinearMap.ker q) := by
+    exact Submodule.finrank_map_subtype_eq _
+  have hrn := LinearMap.finrank_range_add_finrank_ker q
+  have hrange : Module.finrank F (LinearMap.range q) ≤ 2 := by
+    refine le_trans (Submodule.finrank_le _) ?_
+    simp
+  have hWpos : 0 < Module.finrank F W := by omega
+  have hWbot : W ≠ ⊥ := by
+    intro h
+    rw [h] at hWpos
+    simpa using hWpos
+  have hWC : W ≤ C := by
+    intro v hv
+    obtain ⟨w, hw, rfl⟩ := hv
+    exact hkernel w hw
+  have hWS : ∀ v ∈ W, ∀ x ∉ S, v x = 0 := by
+    intro v hv
+    obtain ⟨w, hw, rfl⟩ := hv
+    exact hsupport w.val w.property
+  have hshort := shortened_subspace_bound C W D hDpos hWC S hWS
+    (Submodule.exists_mem_ne_zero_of_ne_bot hWbot) hdistance
+  omega
+
 /-- Universal coordinate-count inequality for a minimal multi-line dependency. -/
 theorem coordinate_count_bound (L a k : ℤ)
     (hL : 4 ≤ L) (ha : 1 ≤ a) (haL : a ≤ L)
@@ -128,3 +165,4 @@ end ProximityGap.IncidenceDependencyArithmetic
 #print axioms ProximityGap.IncidenceDependencyArithmetic.dependency_necessary
 #print axioms ProximityGap.IncidenceDependencyArithmetic.dependency_from_coordinate_ledger
 #print axioms ProximityGap.IncidenceDependencyArithmetic.literal_dependency_excluded
+#print axioms ProximityGap.IncidenceDependencyArithmetic.quotient_shortening_bound
