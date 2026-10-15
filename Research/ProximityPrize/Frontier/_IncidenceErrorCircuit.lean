@@ -22,6 +22,79 @@ open ProximityGap.IncidenceDependencyArithmetic
 open ProximityGap.IncidenceAffineLines
 open ProximityGap.IncidenceConstantLineCap
 
+/-- A bad head constrains every code-valued combination of the received rows. -/
+theorem bad_head_received_coefficients {F Coord : Type} [Field F]
+    (C : Submodule F (Coord → F)) (u0 u1 w : Coord → F) (gamma : F)
+    (T : Set Coord) (hw : w ∈ C)
+    (hag : ∀ x ∈ T, w x = u0 x + gamma * u1 x)
+    (hno : ¬ ∃ f0 ∈ C, ∃ f1 ∈ C,
+      ∀ x ∈ T, f0 x = u0 x ∧ f1 x = u1 x)
+    (a b : F) (hz : a • u0 + b • u1 ∈ C) : b = a * gamma := by
+  by_contra hne
+  have hdne : a * gamma - b ≠ 0 := by
+    intro h
+    exact hne (sub_eq_zero.mp h).symm
+  let V := (a * gamma - b)⁻¹ • (a • w - (a • u0 + b • u1))
+  let U := w - gamma • V
+  have hVC : V ∈ C := C.smul_mem _ (C.sub_mem (C.smul_mem a hw) hz)
+  have hUC : U ∈ C := C.sub_mem hw (C.smul_mem gamma hVC)
+  have hV : ∀ x ∈ T, V x = u1 x := by
+    intro x hx
+    have he : a * w x - (a * u0 x + b * u1 x) =
+        (a * gamma - b) * u1 x := by
+      rw [hag x hx]
+      ring
+    change (a * gamma - b)⁻¹ * (a * w x - (a * u0 x + b * u1 x)) = u1 x
+    rw [he, ← mul_assoc, inv_mul_cancel₀ hdne, one_mul]
+  apply hno
+  refine ⟨U, hUC, V, hVC, ?_⟩
+  intro x hx
+  refine ⟨?_, hV x hx⟩
+  change w x - gamma * V x = u0 x
+  rw [hV x hx, hag x hx]
+  ring
+
+/-- Two distinct bad scalars force independence of received rows modulo C. -/
+theorem received_quotient_independent_of_two_bad_heads
+    {F I Coord : Type} [Field F]
+    (C : Submodule F (Coord → F)) (u0 u1 : Coord → F)
+    (w : I → (Coord → F)) (gamma : I → F) (T : I → Set Coord)
+    (hw : ∀ i, w i ∈ C)
+    (hag : ∀ i, ∀ x ∈ T i, w i x = u0 x + gamma i * u1 x)
+    (hno : ∀ i, ¬ ∃ f0 ∈ C, ∃ f1 ∈ C,
+      ∀ x ∈ T i, f0 x = u0 x ∧ f1 x = u1 x)
+    (i j : I) (hgamma : gamma i ≠ gamma j)
+    (a b : F) (hz : a • u0 + b • u1 ∈ C) : a = 0 ∧ b = 0 := by
+  have hi := bad_head_received_coefficients C u0 u1 (w i) (gamma i) (T i)
+    (hw i) (hag i) (hno i) a b hz
+  have hj := bad_head_received_coefficients C u0 u1 (w j) (gamma j) (T j)
+    (hw j) (hag j) (hno j) a b hz
+  have he : a * (gamma i - gamma j) = 0 := by
+    rw [mul_sub, ← hi, ← hj, sub_self]
+  have ha : a = 0 := (mul_eq_zero.mp he).resolve_right (sub_ne_zero.mpr hgamma)
+  exact ⟨ha, by simpa [ha] using hi⟩
+
+/-- Every error relation has vanishing scalar and scalar-parameter sums. -/
+theorem error_relation_received_coefficients
+    {F I Coord : Type} [Field F] [Fintype I]
+    (C : Submodule F (Coord → F)) (u0 u1 : Coord → F)
+    (w : I → (Coord → F)) (gamma : I → F) (T : I → Set Coord)
+    (hw : ∀ i, w i ∈ C)
+    (hag : ∀ i, ∀ x ∈ T i, w i x = u0 x + gamma i * u1 x)
+    (hno : ∀ i, ¬ ∃ f0 ∈ C, ∃ f1 ∈ C,
+      ∀ x ∈ T i, f0 x = u0 x ∧ f1 x = u1 x)
+    (i j : I) (hgamma : gamma i ≠ gamma j) (c : I → F)
+    (hrel : (∑ k, c k • (u0 + gamma k • u1 - w k)) = 0) :
+    (∑ k, c k) = 0 ∧ (∑ k, c k * gamma k) = 0 := by
+  have hc : (∑ k, c k) • u0 + (∑ k, c k * gamma k) • u1 ∈ C := by
+    simp_rw [smul_sub, smul_add, smul_smul] at hrel
+    rw [Finset.sum_sub_distrib, Finset.sum_add_distrib,
+      ← Finset.sum_smul, ← Finset.sum_smul] at hrel
+    rw [sub_eq_zero.mp hrel]
+    exact C.sum_mem (fun k _ => C.smul_mem (c k) (hw k))
+  exact received_quotient_independent_of_two_bad_heads C u0 u1 w gamma T
+    hw hag hno i j hgamma _ _ hc
+
 theorem no_four_full_error_relation
     {F I Coord : Type} [Field F] [Fintype I] [DecidableEq I]
     [Fintype Coord] [DecidableEq Coord]
@@ -73,3 +146,6 @@ theorem no_four_full_error_relation
 end ProximityGap.IncidenceErrorCircuit
 
 #print axioms ProximityGap.IncidenceErrorCircuit.no_four_full_error_relation
+#print axioms ProximityGap.IncidenceErrorCircuit.bad_head_received_coefficients
+#print axioms ProximityGap.IncidenceErrorCircuit.received_quotient_independent_of_two_bad_heads
+#print axioms ProximityGap.IncidenceErrorCircuit.error_relation_received_coefficients
