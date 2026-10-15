@@ -1,8 +1,57 @@
 import Mathlib.Tactic
+import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
+import Mathlib.LinearAlgebra.Dimension.Finrank
 
 set_option autoImplicit false
 
 namespace ProximityGap.IncidenceDependencyArithmetic
+
+/-- A nonzero code subspace supported on S satisfies the shortened Singleton
+bound. The distance input is the small-support vanishing condition used by the
+existing canonical incidence proofs. -/
+theorem shortened_subspace_bound {F Coord : Type*} [Field F]
+    [Fintype Coord] [DecidableEq Coord]
+    (C V : Submodule F (Coord → F)) (D : ℕ) (hDpos : 0 < D)
+    (hVC : V ≤ C) (S : Finset Coord)
+    (hsupport : ∀ v ∈ V, ∀ x ∉ S, v x = 0)
+    (hne : ∃ v ∈ V, v ≠ 0)
+    (hdistance : ∀ v ∈ C, ∀ B : Finset Coord, B.card < D →
+      (∀ x ∉ B, v x = 0) → v = 0) :
+    Module.finrank F V + D ≤ S.card + 1 := by
+  classical
+  have hDcard : D ≤ S.card := by
+    by_contra h
+    obtain ⟨v, hv, hv0⟩ := hne
+    exact hv0 (hdistance v (hVC hv) S (by omega) (hsupport v hv))
+  obtain ⟨B, hBS, hBcard⟩ :=
+    Finset.exists_subset_card_eq (show D-1 ≤ S.card by omega)
+  let res : V →ₗ[F] ((S \ B) → F) :=
+    { toFun := fun v x => v.val x.val
+      map_add' := by intros
+                     rfl
+      map_smul' := by intros
+                     rfl }
+  have hker : LinearMap.ker res = ⊥ := by
+    refine LinearMap.ker_eq_bot'.2 ?_
+    intro v hv
+    have hsmall : ∀ x ∉ B, v.val x = 0 := by
+      intro x hxB
+      by_cases hxS : x ∈ S
+      · have hx : x ∈ S \ B := Finset.mem_sdiff.mpr ⟨hxS, hxB⟩
+        have he := congrArg (fun f : ((S \ B) → F) => f ⟨x, hx⟩) hv
+        simpa [res] using he
+      · exact hsupport v.val v.property x hxS
+    have hz := hdistance v.val (hVC v.property) B (by omega) hsmall
+    apply Subtype.ext
+    exact hz
+  have hinj : Function.Injective res := by
+    simpa [LinearMap.ker_eq_bot] using hker
+  have hdim : Module.finrank F V ≤ (S \ B).card := by
+    have h := LinearMap.finrank_le_finrank_of_injective hinj
+    simpa using h
+  have hcard : (S \ B).card = S.card-B.card := Finset.card_sdiff hBS
+  rw [hcard, hBcard] at hdim
+  omega
 
 /-- Universal coordinate-count inequality for a minimal multi-line dependency. -/
 theorem coordinate_count_bound (L a k : ℤ)
@@ -72,6 +121,7 @@ theorem literal_dependency_excluded (L : ℤ) (hlo : 4 ≤ L) (hhi : L ≤ 12) :
 end ProximityGap.IncidenceDependencyArithmetic
 
 #print axioms ProximityGap.IncidenceDependencyArithmetic.coordinate_count_bound
+#print axioms ProximityGap.IncidenceDependencyArithmetic.shortened_subspace_bound
 #print axioms ProximityGap.IncidenceDependencyArithmetic.dependency_necessary
 #print axioms ProximityGap.IncidenceDependencyArithmetic.dependency_from_coordinate_ledger
 #print axioms ProximityGap.IncidenceDependencyArithmetic.literal_dependency_excluded
