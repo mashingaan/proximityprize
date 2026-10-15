@@ -428,6 +428,7 @@ noncomputable def affineHeadErrors {F Coord : Type*} [Field F] [Fintype Coord]
 
 /-- The plane support lies in the union of errors of any two distinct heads. -/
 theorem affine_support_pair_cover {F Coord : Type*} [Field F] [Fintype Coord]
+    [DecidableEq Coord]
     (u₀ u₁ U V : Coord → F) (a b : F) (hab : a ≠ b) :
     affineErrorSupport u₀ u₁ U V ⊆
       affineHeadErrors u₀ u₁ U V a ∪ affineHeadErrors u₀ u₁ U V b := by
@@ -466,7 +467,7 @@ theorem three_pair_cover_card {Coord : Type*} [Fintype Coord] [DecidableEq Coord
       simp only [Finset.mem_union] at h₀₁ h₀₂ h₁₂
       simp only [if_pos hx, Fin.sum_univ_succ, Fin.sum_univ_zero, add_zero]
       split_ifs
-      all_goals omega
+      all_goals simp_all
     · simp only [if_neg hx]
       exact Nat.zero_le _
   have hs := Finset.sum_le_sum (fun x (_ : x ∈ Finset.univ) => hpoint x)
