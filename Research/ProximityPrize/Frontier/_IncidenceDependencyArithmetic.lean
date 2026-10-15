@@ -203,6 +203,105 @@ theorem relation_core_shortening {F I Coord : Type*} [Field F]
   exact received_space_shortening_bound C _ P D hDpos hcontain hP
     (sharedSupport Q) (relation_core_shared_support W Q hsupport) hrank hdistance
 
+/-- Summation from the external product of a finite subspace family. -/
+def familySum {F I Coord : Type*} [Field F] [Fintype I]
+    (W : I → Submodule F (Coord → F)) :
+    ((i : I) → W i) →ₗ[F] (Coord → F) where
+  toFun r := ∑ i, (r i).val
+  map_add' := by
+    intro r s
+    simp [Finset.sum_add_distrib]
+  map_smul' := by
+    intro a r
+    simp [Finset.smul_sum]
+
+/-- The image of the relation kernel at one member of the family. -/
+def relationProjection {F I Coord : Type*} [Field F] [Fintype I]
+    (W : I → Submodule F (Coord → F)) (i : I) :
+    LinearMap.ker (familySum W) →ₗ[F] (Coord → F) where
+  toFun r := (r.val i).val
+  map_add' := by
+    intros
+    rfl
+  map_smul' := by
+    intros
+    rfl
+
+/-- Exact dimension of the global relation core, with no independence assumption. -/
+theorem relation_core_dimension {F I Coord : Type*} [Field F]
+    [Fintype I] [Fintype Coord] [DecidableEq I]
+    (W : I → Submodule F (Coord → F)) :
+    Module.finrank F (Submodule.span F (relationComponents W)) +
+      Module.finrank F (LinearMap.ker (familySum W)) =
+      ∑ i, Module.finrank F (LinearMap.range (relationProjection W i)) := by
+  classical
+  let U : I → Submodule F (Coord → F) :=
+    fun i => LinearMap.range (relationProjection W i)
+  have hUW : ∀ i, U i ≤ W i := by
+    intro i v hv
+    obtain ⟨r, rfl⟩ := hv
+    exact (r.val i).property
+  let emb : ((i : I) → U i) →ₗ[F] ((i : I) → W i) :=
+    { toFun := fun r i => ⟨(r i).val, hUW i (r i).property⟩
+      map_add' := by
+        intros
+        rfl
+      map_smul' := by
+        intros
+        rfl }
+  let ke : LinearMap.ker (familySum U) →ₗ[F] LinearMap.ker (familySum W) :=
+    { toFun := fun r => ⟨emb r.val, r.property⟩
+      map_add' := by
+        intros
+        rfl
+      map_smul' := by
+        intros
+        rfl }
+  have hki : Function.Injective ke := by
+    intro r s h
+    apply Subtype.ext
+    funext i
+    apply Subtype.ext
+    exact congrArg (fun z : LinearMap.ker (familySum W) => (z.val i).val) h
+  have hks : Function.Surjective ke := by
+    intro r
+    let s : (i : I) → U i := fun i =>
+      ⟨(r.val i).val, ⟨r, rfl⟩⟩
+    refine ⟨⟨s, r.property⟩, ?_⟩
+    apply Subtype.ext
+    funext i
+    rfl
+  have hkdim : Module.finrank F (LinearMap.ker (familySum U)) =
+      Module.finrank F (LinearMap.ker (familySum W)) :=
+    (LinearEquiv.ofBijective ke ⟨hki, hks⟩).finrank_eq
+  have hrange : LinearMap.range (familySum U) =
+      Submodule.span F (relationComponents W) := by
+    apply le_antisymm
+    · intro v hv
+      obtain ⟨r, rfl⟩ := hv
+      apply Submodule.sum_mem
+      intro i hi
+      obtain ⟨s, hs⟩ := (r i).property
+      apply Submodule.subset_span
+      refine ⟨fun j => (s.val j).val, fun j => (s.val j).property, ?_, i, hs⟩
+      exact s.property
+    · apply Submodule.span_le.mpr
+      intro v hv
+      obtain ⟨r, hr, hsum, i, rfl⟩ := hv
+      let s : LinearMap.ker (familySum W) :=
+        ⟨fun j => ⟨r j, hr j⟩, hsum⟩
+      let a : U i := ⟨r i, ⟨s, rfl⟩⟩
+      refine ⟨Pi.single i a, ?_⟩
+      change (∑ j, ((Pi.single i a) j).val) = r i
+      rw [Finset.sum_eq_single i]
+      · simp [a]
+      · intro j hj hji
+        simp [Pi.single_eq_of_ne hji]
+      · simp
+  have hrn := LinearMap.finrank_range_add_finrank_ker (familySum U)
+  rw [hrange, hkdim, Module.finrank_pi_fintype] at hrn
+  exact hrn
+
 /-- Universal coordinate-count inequality for a minimal multi-line dependency. -/
 theorem coordinate_count_bound (L a k : ℤ)
     (hL : 4 ≤ L) (ha : 1 ≤ a) (haL : a ≤ L)
@@ -280,3 +379,4 @@ end ProximityGap.IncidenceDependencyArithmetic
 #print axioms ProximityGap.IncidenceDependencyArithmetic.relation_component_shared_support
 #print axioms ProximityGap.IncidenceDependencyArithmetic.relation_core_shared_support
 #print axioms ProximityGap.IncidenceDependencyArithmetic.relation_core_shortening
+#print axioms ProximityGap.IncidenceDependencyArithmetic.relation_core_dimension
