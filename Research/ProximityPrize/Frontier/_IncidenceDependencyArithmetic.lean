@@ -27,10 +27,12 @@ theorem shortened_subspace_bound {F Coord : Type*} [Field F]
     Finset.exists_subset_card_eq (show D-1 ≤ S.card by omega)
   let res : V →ₗ[F] ((S \ B) → F) :=
     { toFun := fun v x => v.val x.val
-      map_add' := by intros
-                     rfl
-      map_smul' := by intros
-                     rfl }
+      map_add' := by
+        intros
+        rfl
+      map_smul' := by
+        intros
+        rfl }
   have hker : LinearMap.ker res = ⊥ := by
     refine LinearMap.ker_eq_bot'.2 ?_
     intro v hv
