@@ -33,7 +33,7 @@ jobs:
             incidence-dependencies-${{ runner.os }}-
       - name: Fetch dependency cache
         run: ./scripts/lake-locked.sh exe cache get
-      - name: Check three declarations and audit axioms
+      - name: Check four declarations and audit axioms
         run: |
           set -o pipefail
           lake env lean Research/ProximityPrize/Frontier/_IncidenceDependencyArithmetic.lean | tee multiline-axioms.log
@@ -42,13 +42,12 @@ jobs:
           from pathlib import Path
           text = Path('multiline-axioms.log').read_text()
           assert 'sorryAx' not in text
-          lines = [line for line in text.splitlines() if 'ProximityGap.IncidenceDependencyArithmetic.' in line]
-          assert len(lines) == 3
-          for line in lines:
-              if 'depends on axioms:' in line:
-                  names = re.search(r'\[([^\]]*)\]',line).group(1)
+          matches = re.findall(r"'(ProximityGap\.IncidenceDependencyArithmetic\.[^']+)'\s+(?:depends on axioms:\s*\[([^\]]*)\]|(does not depend on any axioms))",text)
+          expected = {'coordinate_count_bound','dependency_necessary','dependency_from_coordinate_ledger','literal_dependency_excluded'}
+          assert {name.rsplit('.',1)[1] for name,_,_ in matches} == expected
+          assert len(matches) == 4
+          for name,names,no_axioms in matches:
+              if not no_axioms:
                   assert set(name.strip() for name in names.split(',')) <= {'propext','Classical.choice','Quot.sound'}
-              else:
-                  assert 'does not depend on any axioms' in line
-          print('Three arithmetic declarations kernel checked')
+          print('Four finite-ledger declarations kernel checked')
           PY

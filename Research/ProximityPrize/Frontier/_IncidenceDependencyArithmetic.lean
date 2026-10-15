@@ -36,6 +36,32 @@ theorem dependency_necessary (L D t n E S : ℤ)
     (6*L*(L-1)+4)*D ≤ 3*L*(5*L-7)*t+4*(n-L+4) := by
   nlinarith
 
+/-- Finite-coordinate ledger. Codeword-distance, error-budget and shortening
+inputs remain explicit until the canonical witness construction is connected. -/
+theorem dependency_from_coordinate_ledger {X : Type*} (U : Finset X)
+    (L D t n E S : ℤ) (a k b : X → ℤ) (hL : 4 ≤ L)
+    (hcoord : ∀ x ∈ U, 1 ≤ a x ∧ a x ≤ L ∧ 0 ≤ k x ∧ k x ≤ a x)
+    (hcount : ∀ x ∈ U, b x ≤
+      3*L*(L-1)-3*(L-a x)*(L-a x-1)-k x*(L-a x))
+    (hdistance : 3*L*(L-1)*D ≤ ∑ x ∈ U, b x)
+    (herrors : (∑ x ∈ U, (3*a x-k x)) ≤ 3*L*t)
+    (hexclusive : (∑ x ∈ U, (if a x=1 ∧ k x=1 then (1 : ℤ) else 0)) ≤ E)
+    (hshared : D+L-4 ≤ S) (hambient : E+S ≤ n) :
+    (6*L*(L-1)+4)*D ≤ 3*L*(5*L-7)*t+4*(n-L+4) := by
+  have hpoint : ∀ x ∈ U, 2*b x ≤
+      (5*L-7)*(3*a x-k x)+4*(if a x=1 ∧ k x=1 then (1 : ℤ) else 0) := by
+    intro x hx
+    obtain ⟨ha, haL, hk, hka⟩ := hcoord x hx
+    have hc := coordinate_count_bound L (a x) (k x) hL ha haL hk hka
+    have hb := hcount x hx
+    nlinarith
+  have hsum := Finset.sum_le_sum hpoint
+  simp only [Finset.sum_add_distrib, ← Finset.mul_sum] at hsum
+  have herrors' := mul_le_mul_of_nonneg_left herrors (show 0 ≤ 5*L-7 by omega)
+  have havg : 6*L*(L-1)*D ≤ 3*L*(5*L-7)*t+4*E := by
+    nlinarith [hdistance, herrors', hexclusive]
+  exact dependency_necessary L D t n E S havg hshared hambient
+
 /-- Literal integer exclusion, conditional on the necessary inequality above. -/
 theorem literal_dependency_excluded (L : ℤ) (hlo : 4 ≤ L) (hhi : L ≤ 12) :
     ¬ ((6*L*(L-1)+4)*536870913 ≤
@@ -47,4 +73,5 @@ end ProximityGap.IncidenceDependencyArithmetic
 
 #print axioms ProximityGap.IncidenceDependencyArithmetic.coordinate_count_bound
 #print axioms ProximityGap.IncidenceDependencyArithmetic.dependency_necessary
+#print axioms ProximityGap.IncidenceDependencyArithmetic.dependency_from_coordinate_ledger
 #print axioms ProximityGap.IncidenceDependencyArithmetic.literal_dependency_excluded
