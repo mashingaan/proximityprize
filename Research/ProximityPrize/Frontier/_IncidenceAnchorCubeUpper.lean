@@ -155,7 +155,7 @@ theorem no_large_external_family_of_triple_anchor
     332268561 (s*r) (s*v) hinside htotal (by exact_mod_cast hq) hmu hnu hv horder
   rw [hlength] at hlo
   have hnormal : (332268561 : ℝ)*(s*r)^3 +
-      ((1073741824 : ℝ)-332268561)*(s*v)^3 =
+      (((1073741824 : ℕ) : ℝ)-332268561)*(s*v)^3 =
       (332268561*r^3+741473263*v^3)*s^3 := by
     push_cast
     ring
