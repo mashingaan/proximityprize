@@ -123,6 +123,86 @@ theorem received_space_shortening_bound {F Coord : Type*} [Field F]
     (Submodule.exists_mem_ne_zero_of_ne_bot hbot) hdistance
   omega
 
+/-- Coordinates supported by at least two members of a finite family. -/
+noncomputable def sharedSupport {I Coord : Type*} [Fintype I] [Fintype Coord]
+    (Q : I → Finset Coord) : Finset Coord := by
+  classical
+  exact Finset.univ.filter (fun x => ∃ i j, i ≠ j ∧ x ∈ Q i ∧ x ∈ Q j)
+
+/-- All components occurring in relations among a family of subspaces. -/
+def relationComponents {F I Coord : Type*} [Field F] [Fintype I]
+    (W : I → Submodule F (Coord → F)) : Set (Coord → F) :=
+  {v | ∃ r : I → (Coord → F), (∀ i, r i ∈ W i) ∧
+    (∑ i, r i) = 0 ∧ ∃ i, r i = v}
+
+/-- A relation component cannot be nonzero on an exclusive coordinate. -/
+theorem relation_component_shared_support {F I Coord : Type*} [Field F]
+    [Fintype I] [Fintype Coord] [DecidableEq I] [DecidableEq Coord]
+    (W : I → Submodule F (Coord → F)) (Q : I → Finset Coord)
+    (hsupport : ∀ i, ∀ v ∈ W i, ∀ x ∉ Q i, v x = 0)
+    (r : I → (Coord → F)) (hr : ∀ i, r i ∈ W i)
+    (hsum : (∑ i, r i) = 0) (i : I) (x : Coord)
+    (hx : x ∉ sharedSupport Q) : r i x = 0 := by
+  classical
+  by_cases hxi : x ∈ Q i
+  · have hother : ∀ j, j ≠ i → r j x = 0 := by
+      intro j hji
+      apply hsupport j (r j) (hr j) x
+      intro hxj
+      apply hx
+      simp only [sharedSupport, Finset.mem_filter, Finset.mem_univ, true_and]
+      exact ⟨i, j, Ne.symm hji, hxi, hxj⟩
+    have he : (∑ j, r j x) = r i x := by
+      apply Finset.sum_eq_single i
+      · intro j hj hji
+        exact hother j hji
+      · simp
+    have hz : (∑ j, r j x) = 0 := by
+      simpa only [Finset.sum_apply, Pi.zero_apply] using
+        congrArg (fun f : Coord → F => f x) hsum
+    exact he.symm.trans hz
+  · exact hsupport i (r i) (hr i) x hxi
+
+/-- The span of all relation components is supported on shared coordinates. -/
+theorem relation_core_shared_support {F I Coord : Type*} [Field F]
+    [Fintype I] [Fintype Coord] [DecidableEq I] [DecidableEq Coord]
+    (W : I → Submodule F (Coord → F)) (Q : I → Finset Coord)
+    (hsupport : ∀ i, ∀ v ∈ W i, ∀ x ∉ Q i, v x = 0) :
+    ∀ v ∈ Submodule.span F (relationComponents W),
+      ∀ x ∉ sharedSupport Q, v x = 0 := by
+  classical
+  intro v hv x hx
+  let ev : (Coord → F) →ₗ[F] F :=
+    LinearMap.proj (R := F) (φ := fun _ : Coord => F) x
+  have hle : Submodule.span F (relationComponents W) ≤ LinearMap.ker ev := by
+    apply Submodule.span_le.mpr
+    intro w hw
+    obtain ⟨r, hr, hsum, i, rfl⟩ := hw
+    change r i x = 0
+    exact relation_component_shared_support W Q hsupport r hr hsum i x hx
+  exact hle hv
+
+/-- Global shortening for the relation core of arbitrarily many pencils. -/
+theorem relation_core_shortening {F I Coord : Type*} [Field F]
+    [Fintype I] [Fintype Coord] [DecidableEq I] [DecidableEq Coord]
+    (C P : Submodule F (Coord → F))
+    (W : I → Submodule F (Coord → F)) (Q : I → Finset Coord)
+    (D : ℕ) (hDpos : 0 < D) (hP : Module.finrank F P ≤ 2)
+    (hW : ∀ i, W i ≤ C ⊔ P)
+    (hsupport : ∀ i, ∀ v ∈ W i, ∀ x ∉ Q i, v x = 0)
+    (hrank : 3 ≤ Module.finrank F (Submodule.span F (relationComponents W)))
+    (hdistance : ∀ v ∈ C, ∀ B : Finset Coord, B.card < D →
+      (∀ x ∉ B, v x = 0) → v = 0) :
+    Module.finrank F (Submodule.span F (relationComponents W)) + D ≤
+      (sharedSupport Q).card + 3 := by
+  have hcontain : Submodule.span F (relationComponents W) ≤ C ⊔ P := by
+    apply Submodule.span_le.mpr
+    intro v hv
+    obtain ⟨r, hr, hsum, i, rfl⟩ := hv
+    exact hW i (hr i)
+  exact received_space_shortening_bound C _ P D hDpos hcontain hP
+    (sharedSupport Q) (relation_core_shared_support W Q hsupport) hrank hdistance
+
 /-- Universal coordinate-count inequality for a minimal multi-line dependency. -/
 theorem coordinate_count_bound (L a k : ℤ)
     (hL : 4 ≤ L) (ha : 1 ≤ a) (haL : a ≤ L)
@@ -197,3 +277,6 @@ end ProximityGap.IncidenceDependencyArithmetic
 #print axioms ProximityGap.IncidenceDependencyArithmetic.literal_dependency_excluded
 #print axioms ProximityGap.IncidenceDependencyArithmetic.quotient_shortening_bound
 #print axioms ProximityGap.IncidenceDependencyArithmetic.received_space_shortening_bound
+#print axioms ProximityGap.IncidenceDependencyArithmetic.relation_component_shared_support
+#print axioms ProximityGap.IncidenceDependencyArithmetic.relation_core_shared_support
+#print axioms ProximityGap.IncidenceDependencyArithmetic.relation_core_shortening
