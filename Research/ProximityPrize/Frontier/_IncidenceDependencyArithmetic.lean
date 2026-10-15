@@ -291,12 +291,13 @@ theorem relation_core_dimension {F I Coord : Type*} [Field F]
       let s : LinearMap.ker (familySum W) :=
         ⟨fun j => ⟨r j, hr j⟩, hsum⟩
       let a : U i := ⟨r i, ⟨s, rfl⟩⟩
-      refine ⟨Pi.single i a, ?_⟩
-      change (∑ j, ((Pi.single i a) j).val) = r i
+      let b : (j : I) → U j := Pi.single i a
+      refine ⟨b, ?_⟩
+      change (∑ j, (b j).val) = r i
       rw [Finset.sum_eq_single i]
-      · simp [a]
+      · simp [b, a]
       · intro j hj hji
-        simp [Pi.single_eq_of_ne hji]
+        simp [b, Pi.single_eq_of_ne hji]
       · simp
   have hrn := LinearMap.finrank_range_add_finrank_ker (familySum U)
   rw [hrange, hkdim, Module.finrank_pi_fintype] at hrn
