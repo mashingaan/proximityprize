@@ -40,6 +40,7 @@ jobs:
           python3 scripts/probes/probe_multiline_dependency_girth.py
           python3 scripts/probes/probe_multiline_rank_ledger_slack.py
           python3 scripts/probes/probe_multiline_pair_difference_cap.py
+          python3 scripts/probes/probe_multiline_triple_anchor.py
   kernel:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
