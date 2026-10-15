@@ -324,6 +324,101 @@ theorem projected_relation_shortening {F I Coord : Type*} [Field F]
   have hs := relation_core_shortening C P W Q D hDpos hP hW hsupport hrank hdistance
   omega
 
+/-- Error plane of an affine family of decoded heads. -/
+def affineErrorPlane {F Coord : Type*} [Field F]
+    (u₀ u₁ U V : Coord → F) : Submodule F (Coord → F) :=
+  Submodule.span F {u₀ - U, u₁ - V}
+
+noncomputable def affineErrorSupport {F Coord : Type*} [Field F] [Fintype Coord]
+    (u₀ u₁ U V : Coord → F) : Finset Coord := by
+  classical
+  exact Finset.univ.filter (fun x => u₀ x ≠ U x ∨ u₁ x ≠ V x)
+
+/-- Two distinct decoded code heads force both affine parameters into the code. -/
+theorem affine_parameters_mem_code {F Coord : Type*} [Field F]
+    (C : Submodule F (Coord → F)) (U V : Coord → F) (a b : F)
+    (hab : a ≠ b) (ha : U + a • V ∈ C) (hb : U + b • V ∈ C) :
+    U ∈ C ∧ V ∈ C := by
+  have hdiff : (a - b) • V ∈ C := by
+    have h := C.sub_mem ha hb
+    have he : (a - b) • V = (U + a • V) - (U + b • V) := by
+      rw [sub_smul]
+      abel
+    rwa [← he] at h
+  have hV : V ∈ C := by
+    have h := C.smul_mem (a - b)⁻¹ hdiff
+    rwa [smul_smul, inv_mul_cancel₀ (sub_ne_zero.mpr hab), one_smul] at h
+  have hU := C.sub_mem ha (C.smul_mem a hV)
+  constructor
+  · simpa using hU
+  · exact hV
+
+/-- Affine error planes have their explicit coefficient support. -/
+theorem affine_error_plane_support {F Coord : Type*} [Field F] [Fintype Coord]
+    (u₀ u₁ U V : Coord → F) :
+    ∀ v ∈ affineErrorPlane u₀ u₁ U V,
+      ∀ x ∉ affineErrorSupport u₀ u₁ U V, v x = 0 := by
+  classical
+  intro v hv x hx
+  have hzero : u₀ x = U x ∧ u₁ x = V x := by
+    simpa [affineErrorSupport, not_or] using hx
+  let ev : (Coord → F) →ₗ[F] F :=
+    LinearMap.proj (R := F) (φ := fun _ : Coord => F) x
+  have hle : affineErrorPlane u₀ u₁ U V ≤ LinearMap.ker ev := by
+    apply Submodule.span_le.mpr
+    intro w hw
+    simp only [Set.mem_insert_iff, Set.mem_singleton_iff] at hw
+    rcases hw with rfl | rfl
+    · change u₀ x - U x = 0
+      exact sub_eq_zero.mpr hzero.1
+    · change u₁ x - V x = 0
+      exact sub_eq_zero.mpr hzero.2
+  exact hle hv
+
+/-- The projected-kernel inequality for actual affine decoded code heads.
+Received-space containment and shared support are derived from the heads. -/
+theorem affine_head_relation_shortening {F I Coord : Type*} [Field F]
+    [Fintype I] [Fintype Coord] [DecidableEq I] [DecidableEq Coord]
+    (C : Submodule F (Coord → F)) (u₀ u₁ : Coord → F)
+    (U V : I → (Coord → F)) (a b : I → F)
+    (hab : ∀ i, a i ≠ b i)
+    (ha : ∀ i, U i + a i • V i ∈ C)
+    (hb : ∀ i, U i + b i • V i ∈ C)
+    (D : ℕ) (hDpos : 0 < D)
+    (hactive : Module.finrank F (LinearMap.ker
+        (familySum (fun i => affineErrorPlane u₀ u₁ (U i) (V i)))) + 3 ≤
+      ∑ i, Module.finrank F (LinearMap.range
+        (relationProjection (fun j => affineErrorPlane u₀ u₁ (U j) (V j)) i)))
+    (hdistance : ∀ v ∈ C, ∀ B : Finset Coord, B.card < D →
+      (∀ x ∉ B, v x = 0) → v = 0) :
+    (∑ i, Module.finrank F (LinearMap.range
+      (relationProjection (fun j => affineErrorPlane u₀ u₁ (U j) (V j)) i))) + D ≤
+      (sharedSupport (fun i => affineErrorSupport u₀ u₁ (U i) (V i))).card + 3 +
+      Module.finrank F (LinearMap.ker
+        (familySum (fun i => affineErrorPlane u₀ u₁ (U i) (V i)))) := by
+  classical
+  let P : Submodule F (Coord → F) := Submodule.span F {u₀, u₁}
+  have hP : Module.finrank F P ≤ 2 := by
+    have h₁ := finrank_span_le_card (R := F) ({u₀, u₁} : Set (Coord → F))
+    have h₂ : ({u₀, u₁} : Set (Coord → F)).toFinset.card ≤ 2 := by
+      rw [Set.toFinset_insert, Set.toFinset_singleton]
+      exact (Finset.card_insert_le _ _).trans (by simp)
+    exact h₁.trans h₂
+  have hW : ∀ i, affineErrorPlane u₀ u₁ (U i) (V i) ≤ C ⊔ P := by
+    intro i
+    obtain ⟨hU, hV⟩ := affine_parameters_mem_code C (U i) (V i)
+      (a i) (b i) (hab i) (ha i) (hb i)
+    apply Submodule.span_le.mpr
+    intro w hw
+    simp only [Set.mem_insert_iff, Set.mem_singleton_iff] at hw
+    rcases hw with rfl | rfl
+    · exact (C ⊔ P).sub_mem (le_sup_right (Submodule.subset_span (by simp)))
+        (le_sup_left hU)
+    · exact (C ⊔ P).sub_mem (le_sup_right (Submodule.subset_span (by simp)))
+        (le_sup_left hV)
+  exact projected_relation_shortening C P _ _ D hDpos hP hW
+    (fun i => affine_error_plane_support u₀ u₁ (U i) (V i)) hactive hdistance
+
 /-- Universal coordinate-count inequality for a minimal multi-line dependency. -/
 theorem coordinate_count_bound (L a k : ℤ)
     (hL : 4 ≤ L) (ha : 1 ≤ a) (haL : a ≤ L)
@@ -403,3 +498,6 @@ end ProximityGap.IncidenceDependencyArithmetic
 #print axioms ProximityGap.IncidenceDependencyArithmetic.relation_core_shortening
 #print axioms ProximityGap.IncidenceDependencyArithmetic.relation_core_dimension
 #print axioms ProximityGap.IncidenceDependencyArithmetic.projected_relation_shortening
+#print axioms ProximityGap.IncidenceDependencyArithmetic.affine_parameters_mem_code
+#print axioms ProximityGap.IncidenceDependencyArithmetic.affine_error_plane_support
+#print axioms ProximityGap.IncidenceDependencyArithmetic.affine_head_relation_shortening
