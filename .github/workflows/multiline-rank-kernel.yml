@@ -1,0 +1,54 @@
+name: Multi-line arithmetic kernel audit
+on:
+  push:
+    branches: [research/sponsor-finite-bracket]
+    paths:
+      - Research/ProximityPrize/Frontier/_IncidenceDependencyArithmetic.lean
+      - .github/workflows/multiline-rank-kernel.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  kernel:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      LEAN_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: leanprover/lean-action@v1.6.0
+        with:
+          auto-config: false
+          build: false
+          test: false
+          lint: false
+          use-github-cache: false
+          use-mathlib-cache: false
+      - uses: actions/cache/restore@v4
+        with:
+          path: .lake
+          key: multiline-kernel-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            incidence-build-${{ runner.os }}-${{ hashFiles('lean-toolchain', 'lake-manifest.json') }}-
+            incidence-dependencies-${{ runner.os }}-
+      - name: Fetch dependency cache
+        run: ./scripts/lake-locked.sh exe cache get
+      - name: Check three declarations and audit axioms
+        run: |
+          set -o pipefail
+          lake env lean Research/ProximityPrize/Frontier/_IncidenceDependencyArithmetic.lean | tee multiline-axioms.log
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          text = Path('multiline-axioms.log').read_text()
+          assert 'sorryAx' not in text
+          lines = [line for line in text.splitlines() if 'ProximityGap.IncidenceDependencyArithmetic.' in line]
+          assert len(lines) == 3
+          for line in lines:
+              if 'depends on axioms:' in line:
+                  names = re.search(r'\[([^\]]*)\]',line).group(1)
+                  assert set(name.strip() for name in names.split(',')) <= {'propext','Classical.choice','Quot.sound'}
+              else:
+                  assert 'does not depend on any axioms' in line
+          print('Three arithmetic declarations kernel checked')
+          PY
