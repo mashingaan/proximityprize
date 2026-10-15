@@ -7,11 +7,12 @@ import Research.ProximityPrize.Frontier._IncidenceDependencyArithmetic
 import Research.ProximityPrize.Frontier._IncidenceConstantLineCap
 
 /-!
-# No full four-error relation in a canonical bad-witness family
+# Small error circuits in a canonical bad-witness family
 
 This combines the direct error-relation transfer with the global cap-three
 theorem. The cap uses the whole family's size and its lack of joint explanations.
-The conclusion only excludes relations with every coefficient nonzero.
+Received quotient independence follows from two distinct bad heads. Outside
+three-head lines, every four selected errors are linearly independent.
 -/
 
 set_option autoImplicit false
@@ -182,19 +183,25 @@ theorem three_bad_errors_linearIndependent
       (hg 1 2 (by decide)) (by simpa [hc0] using hs)
       (by simpa [hc0] using hweighted)
     fin_cases i
-    all_goals simp_all
+    · exact hc0
+    · exact hz.1
+    · exact hz.2
   by_cases hc1 : c 1 = 0
   · have hz := two_scalar_coefficients_zero (c 0) (c 2) (gamma 0) (gamma 2)
       (hg 0 2 (by decide)) (by simpa [hc1] using hs)
       (by simpa [hc1] using hweighted)
     fin_cases i
-    all_goals simp_all
+    · exact hz.1
+    · exact hc1
+    · exact hz.2
   by_cases hc2 : c 2 = 0
   · have hz := two_scalar_coefficients_zero (c 0) (c 1) (gamma 0) (gamma 1)
       (hg 0 1 (by decide)) (by simpa [hc2] using hs)
       (by simpa [hc2] using hweighted)
     fin_cases i
-    all_goals simp_all
+    · exact hz.1
+    · exact hz.2
+    · exact hc2
   have hc : ∀ j, c j ≠ 0 := by
     intro j
     fin_cases j
@@ -230,7 +237,7 @@ theorem four_bad_errors_linearIndependent_of_no_collinear_triple
   by_cases hc : ∀ k, c k ≠ 0
   · exact False.elim ((no_four_full_error_relation gamma w hinj C d t hsize ht
       hC T u0 u1 hwC hcompl hwag hno a ha c hc) hrel)
-  push_neg at hc
+  push Not at hc
   obtain ⟨k, hk⟩ := hc
   let b : Fin 3 → I := fun j => a (k.succAbove j)
   have hb : Function.Injective b := ha.comp Fin.succAbove_right_injective
