@@ -93,7 +93,9 @@ theorem agreement_mass_on_region {I Coord : Type} [Fintype I]
   calc
     (∑ x ∈ Q, agreementDegree T x) =
         ∑ x ∈ Q, ∑ i, if x ∈ T i then 1 else 0 := by
-      simp only [agreementDegree, Finset.card_filter]
+      apply Finset.sum_congr rfl
+      intro x _
+      exact Finset.card_filter _ _
     _ = ∑ i, ∑ x ∈ Q, if x ∈ T i then 1 else 0 := Finset.sum_comm
     _ = ∑ i, (T i ∩ Q).card := by
       apply Finset.sum_congr rfl
