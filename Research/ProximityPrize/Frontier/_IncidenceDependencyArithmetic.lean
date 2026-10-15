@@ -1,6 +1,26 @@
+/-
+Copyright (c) 2026 Mikhail Izhutkin. All rights reserved.
+Released under both MIT and Apache-2.0 licenses as described in LICENSE.
+Authors: Mikhail Izhutkin (mashingaan)
+-/
 import Mathlib.Tactic
 import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
 import Mathlib.LinearAlgebra.Dimension.Finrank
+
+/-!
+# Global relation-core rank and shortening for affine decoded heads
+
+For a finite family of error planes, the span of all components of relations is
+supported on coordinates belonging to at least two planes. Its dimension plus
+the relation-kernel dimension equals the sum of the projection dimensions.
+Shortening in the received space then bounds this dimension by the shared
+support. The affine-head application derives code membership from two heads.
+
+The finite coordinate ledger at the end retains explicit counting inputs.
+This module does not prove a new canonical threshold or a global witness budget.
+See `Research/ProximityPrize/multiline-relation-shortening.md` for the exact
+first-sponsor research implications and remaining proof obligations.
+-/
 
 set_option autoImplicit false
 
@@ -324,6 +344,121 @@ theorem projected_relation_shortening {F I Coord : Type*} [Field F]
   have hs := relation_core_shortening C P W Q D hDpos hP hW hsupport hrank hdistance
   omega
 
+/-- Shared coordinates consume at least two incidences in the support ledger. -/
+theorem shared_support_incidence_budget {I Coord : Type*}
+    [Fintype I] [Fintype Coord] [DecidableEq I] [DecidableEq Coord]
+    (Q : I → Finset Coord) :
+    2 * (sharedSupport Q).card ≤ ∑ i, (Q i).card := by
+  classical
+  have hpoint : ∀ x : Coord,
+      (if x ∈ sharedSupport Q then 2 else 0) ≤
+        ∑ i : I, if x ∈ Q i then 1 else 0 := by
+    intro x
+    by_cases hx : x ∈ sharedSupport Q
+    · obtain ⟨i, j, hij, hxi, hxj⟩ :
+          ∃ i j, i ≠ j ∧ x ∈ Q i ∧ x ∈ Q j := by
+        simpa [sharedSupport] using hx
+      have hp := Finset.sum_le_sum_of_subset
+        (f := fun i : I => if x ∈ Q i then (1 : ℕ) else 0)
+        (Finset.subset_univ ({i, j} : Finset I))
+      rw [Finset.sum_insert (by simp [hij]), Finset.sum_singleton] at hp
+      simpa only [if_pos hx, if_pos hxi, if_pos hxj] using hp
+    · simp only [if_neg hx]
+      exact Nat.zero_le _
+  have hs := Finset.sum_le_sum (fun x (_ : x ∈ Finset.univ) => hpoint x)
+  rw [Finset.sum_comm] at hs
+  simpa [Finset.sum_ite, mul_comm] using hs
+
+/-- Global relation shortening expressed directly in the total support budget. -/
+theorem projected_relation_incidence_budget {F I Coord : Type*} [Field F]
+    [Fintype I] [Fintype Coord] [DecidableEq I] [DecidableEq Coord]
+    (C P : Submodule F (Coord → F))
+    (W : I → Submodule F (Coord → F)) (Q : I → Finset Coord)
+    (D : ℕ) (hDpos : 0 < D) (hP : Module.finrank F P ≤ 2)
+    (hW : ∀ i, W i ≤ C ⊔ P)
+    (hsupport : ∀ i, ∀ v ∈ W i, ∀ x ∉ Q i, v x = 0)
+    (hactive : Module.finrank F (LinearMap.ker (familySum W)) + 3 ≤
+      ∑ i, Module.finrank F (LinearMap.range (relationProjection W i)))
+    (hdistance : ∀ v ∈ C, ∀ B : Finset Coord, B.card < D →
+      (∀ x ∉ B, v x = 0) → v = 0) :
+    2 * ((∑ i, Module.finrank F (LinearMap.range (relationProjection W i))) + D) ≤
+      (∑ i, (Q i).card) + 6 +
+        2 * Module.finrank F (LinearMap.ker (familySum W)) := by
+  have hr := projected_relation_shortening C P W Q D hDpos hP hW
+    hsupport hactive hdistance
+  have hi := shared_support_incidence_budget Q
+  omega
+
+/-- A short full-support relation between actual decoding errors forces every
+decoded head onto one affine line. No rank-activity hypothesis is required. -/
+theorem affine_heads_of_small_error_relation {F I Coord : Type*} [Field F]
+    [Fintype I] [Fintype Coord] [DecidableEq I] [DecidableEq Coord]
+    (C : Submodule F (Coord → F)) (u₀ u₁ : Coord → F)
+    (w : I → (Coord → F)) (γ c : I → F) (Q : I → Finset Coord)
+    (D t : ℕ) (hw : ∀ i, w i ∈ C) (hc : ∀ i, c i ≠ 0)
+    (hagree : ∀ i x, x ∉ Q i → w i x = u₀ x + γ i * u₁ x)
+    (hweight : ∀ i, (Q i).card ≤ t)
+    (hsmall : Fintype.card I * t < 2 * D)
+    (hrel : (∑ i, c i • (u₀ + γ i • u₁ - w i)) = 0)
+    (i₀ i₁ : I) (hγ : γ i₀ ≠ γ i₁)
+    (hdistance : ∀ v ∈ C, ∀ B : Finset Coord, B.card < D →
+      (∀ x ∉ B, v x = 0) → v = 0) :
+    ∃ U V, U ∈ C ∧ V ∈ C ∧ ∀ i, w i = U + γ i • V := by
+  classical
+  let S := sharedSupport Q
+  have houtside : ∀ i x, x ∉ S → w i x = u₀ x + γ i * u₁ x := by
+    intro i x hx
+    by_cases hxi : x ∈ Q i
+    · have hj : ∀ j, j ≠ i → x ∉ Q j := by
+        intro j hji hxj
+        apply hx
+        simp only [S, sharedSupport, Finset.mem_filter, Finset.mem_univ, true_and]
+        exact ⟨i, j, Ne.symm hji, hxi, hxj⟩
+      have hz : (∑ j, c j * (u₀ x + γ j * u₁ x - w j x)) = 0 := by
+        have he := congrArg (fun v : Coord → F => v x) hrel
+        simpa using he
+      have he : (∑ j, c j * (u₀ x + γ j * u₁ x - w j x)) =
+          c i * (u₀ x + γ i * u₁ x - w i x) := by
+        apply Finset.sum_eq_single i
+        · intro j _ hji
+          rw [hagree j x (hj j hji)]
+          ring
+        · simp
+      rw [he] at hz
+      exact (sub_eq_zero.mp ((mul_eq_zero.mp hz).resolve_left (hc i))).symm
+    · exact hagree i x hxi
+  have hcard : S.card < D := by
+    have hi := shared_support_incidence_budget Q
+    have hwgt := Finset.sum_le_sum (fun i (_ : i ∈ Finset.univ) => hweight i)
+    have hsum : (∑ _i : I, t) = Fintype.card I * t := by simp
+    rw [hsum] at hwgt
+    change 2 * S.card ≤ _ at hi
+    omega
+  let V := (γ i₀ - γ i₁)⁻¹ • (w i₀ - w i₁)
+  let U := w i₀ - γ i₀ • V
+  have hVC : V ∈ C := C.smul_mem _ (C.sub_mem (hw i₀) (hw i₁))
+  have hUC : U ∈ C := C.sub_mem (hw i₀) (C.smul_mem _ hVC)
+  have hV : ∀ x ∉ S, V x = u₁ x := by
+    intro x hx
+    have hd : w i₀ x - w i₁ x = (γ i₀ - γ i₁) * u₁ x := by
+      rw [houtside i₀ x hx, houtside i₁ x hx]
+      ring
+    change (γ i₀ - γ i₁)⁻¹ * (w i₀ x - w i₁ x) = u₁ x
+    rw [hd, ← mul_assoc, inv_mul_cancel₀ (sub_ne_zero.mpr hγ), one_mul]
+  have hU : ∀ x ∉ S, U x = u₀ x := by
+    intro x hx
+    change w i₀ x - γ i₀ * V x = u₀ x
+    rw [hV x hx, houtside i₀ x hx]
+    ring
+  refine ⟨U, V, hUC, hVC, ?_⟩
+  intro i
+  apply sub_eq_zero.mp
+  apply hdistance _ (C.sub_mem (hw i) (C.add_mem hUC (C.smul_mem _ hVC))) S hcard
+  intro x hx
+  change w i x - (U x + γ i * V x) = 0
+  rw [houtside i x hx, hU x hx, hV x hx]
+  ring
+
 /-- Error plane of an affine family of decoded heads. -/
 def affineErrorPlane {F Coord : Type*} [Field F]
     (u₀ u₁ U V : Coord → F) : Submodule F (Coord → F) :=
@@ -574,3 +709,6 @@ end ProximityGap.IncidenceDependencyArithmetic
 #print axioms ProximityGap.IncidenceDependencyArithmetic.affine_support_pair_cover
 #print axioms ProximityGap.IncidenceDependencyArithmetic.three_pair_cover_card
 #print axioms ProximityGap.IncidenceDependencyArithmetic.three_head_support_budget
+#print axioms ProximityGap.IncidenceDependencyArithmetic.shared_support_incidence_budget
+#print axioms ProximityGap.IncidenceDependencyArithmetic.projected_relation_incidence_budget
+#print axioms ProximityGap.IncidenceDependencyArithmetic.affine_heads_of_small_error_relation
