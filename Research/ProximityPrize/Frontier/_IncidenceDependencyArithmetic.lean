@@ -51,7 +51,8 @@ theorem shortened_subspace_bound {F Coord : Type*} [Field F]
   have hdim : Module.finrank F V ≤ (S \ B).card := by
     have h := LinearMap.finrank_le_finrank_of_injective hinj
     simpa using h
-  have hcard : (S \ B).card = S.card-B.card := Finset.card_sdiff hBS
+  have hcard : (S \ B).card = S.card-B.card := by
+    rw [Finset.card_sdiff, Finset.inter_eq_left.mpr hBS]
   rw [hcard, hBcard] at hdim
   omega
 
