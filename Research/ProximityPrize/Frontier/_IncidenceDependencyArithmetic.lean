@@ -25,7 +25,7 @@ theorem shortened_subspace_bound {F Coord : Type*} [Field F]
     exact hv0 (hdistance v (hVC hv) S (by omega) (hsupport v hv))
   obtain ⟨B, hBS, hBcard⟩ :=
     Finset.exists_subset_card_eq (show D-1 ≤ S.card by omega)
-  let res : V →ₗ[F] ((S \ B) → F) :=
+  let res : V →ₗ[F] (↥(S \ B) → F) :=
     { toFun := fun v x => v.val x.val
       map_add' := by
         intros
@@ -40,7 +40,7 @@ theorem shortened_subspace_bound {F Coord : Type*} [Field F]
       intro x hxB
       by_cases hxS : x ∈ S
       · have hx : x ∈ S \ B := Finset.mem_sdiff.mpr ⟨hxS, hxB⟩
-        have he := congrArg (fun f : ((S \ B) → F) => f ⟨x, hx⟩) hv
+        have he := congrArg (fun f : (↥(S \ B) → F) => f ⟨x, hx⟩) hv
         simpa [res] using he
       · exact hsupport v.val v.property x hxS
     have hz := hdistance v.val (hVC v.property) B (by omega) hsmall
