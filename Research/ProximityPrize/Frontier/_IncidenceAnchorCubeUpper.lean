@@ -22,6 +22,7 @@ namespace ProximityGap.IncidenceAnchorCubeUpper
 
 open ProximityGap.IncidenceTripleAnchor ProximityGap.IncidenceTripleMass
 open ProximityGap.IncidenceAffineLines ProximityGap.IncidenceConstantLineCap
+open ProximityGap.IncidenceDependencyArithmetic
 
 theorem canonical_agreement_cube_upper
     {F I Coord : Type} [Field F] [Fintype I] [DecidableEq I]
@@ -87,6 +88,95 @@ theorem canonical_agreement_cube_upper
     rw [← Nat.add_mul, hdist]
   nlinarith [Nat.mul_le_mul_left t hcol]
 
+/-- At the literal first-sponsor radius a three-head anchor cannot have an
+external bad-witness family of size at least n-2. All moment bounds are derived. -/
+theorem no_large_external_family_of_triple_anchor
+    {F I Coord : Type} [Field F] [Fintype I] [DecidableEq I]
+    [Fintype Coord] [DecidableEq Coord]
+    (hlength : Fintype.card Coord = 1073741824)
+    (gamma : I → F) (w : I → (Coord → F)) (hinj : Function.Injective gamma)
+    (C : Submodule F (Coord → F)) (T : I → Finset Coord)
+    (u0 u1 U V : Coord → F) (a : Fin 3 → F) (ha : Function.Injective a)
+    (hheads : ∀ j, U + a j • V ∈ C)
+    (hanchor : ∀ j, (ProximityGap.IncidenceDependencyArithmetic.affineHeadErrors
+      u0 u1 U V (a j)).card ≤ 221512374)
+    (hsize : 1073741822 ≤ Fintype.card I)
+    (hC : ∀ z ∈ C, (∃ B : Finset Coord, B.card ≤ 536870912 ∧
+      ∀ x ∉ B, z x = 0) → z = 0)
+    (hwC : ∀ i, w i ∈ C) (hcompl : ∀ i, (T i)ᶜ.card ≤ 221512374)
+    (hwag : ∀ i, ∀ x ∈ T i, w i x = u0 x + gamma i • u1 x)
+    (hno : ∀ i, ¬ ∃ f0 ∈ C, ∃ f1 ∈ C,
+      ∀ x ∈ T i, f0 x = u0 x ∧ f1 x = u1 x)
+    (houtside : ∀ i, w i ≠ U + gamma i • V) : False := by
+  classical
+  obtain ⟨hU, hV⟩ := affine_parameters_mem_code C U V (a 0) (a 1)
+    (fun h => (by decide : (0 : Fin 3) ≠ 1) (ha h)) (hheads 0) (hheads 1)
+  let Q := ProximityGap.IncidenceDependencyArithmetic.affineErrorSupport u0 u1 U V
+  have hbudget := ProximityGap.IncidenceDependencyArithmetic.three_head_support_budget
+    u0 u1 U V a ha 221512374 hanchor
+  have hq : Q.card ≤ 332268561 := by
+    change 2*Q.card ≤ _ at hbudget
+    omega
+  have hdistance : ∀ z ∈ C, ∀ B : Finset Coord, B.card < 536870913 →
+      (∀ x ∉ B, z x = 0) → z = 0 := by
+    intro z hz B hB hs
+    exact hC z hz ⟨B, by omega, hs⟩
+  have hinside : ∀ i, 315358539 ≤ (T i ∩ Q).card := by
+    intro i
+    have ho := external_head_anchor_overlap C u0 u1 U V (w i) (gamma i)
+      536870913 221512374 (T i)ᶜ hU hV (hwC i) (houtside i)
+      (fun x hx => by simpa using hwag i x (by simpa using hx))
+      (hcompl i) hdistance
+    change 536870913 + (Q ∩ (T i)ᶜ).card ≤ Q.card + 221512374 at ho
+    have hp := Finset.card_inter_add_card_sdiff Q (T i)
+    rw [Finset.sdiff_eq_inter_compl, Finset.inter_comm Q (T i)] at hp
+    omega
+  have htotal : ∀ i, 315358539+536870911 ≤ (T i).card := by
+    intro i
+    have hc := Finset.card_compl_add_card (T i)
+    rw [hlength] at hc
+    have he := hcompl i
+    omega
+  let s : ℝ := Fintype.card I
+  let r : ℝ := 315358539 / 332268561
+  let v : ℝ := 536870911 / 741473263
+  have hs : 0 ≤ s := Nat.cast_nonneg _
+  have hv : 0 ≤ s*v := mul_nonneg hs (by norm_num [v])
+  have horder : s*v ≤ s*r := mul_le_mul_of_nonneg_left (by norm_num [r, v]) hs
+  have hmu : (332268561 : ℝ)*(s*r) = (Fintype.card I : ℝ)*315358539 := by
+    dsimp [s, r]
+    ring
+  have hnu : ((Fintype.card Coord : ℝ)-332268561)*(s*v) =
+      (Fintype.card I : ℝ)*536870911 := by
+    rw [hlength]
+    dsimp [s, v]
+    ring
+  have hlo := agreement_cube_lower_uniform_of_counts T Q 315358539 536870911
+    332268561 (s*r) (s*v) hinside htotal (by exact_mod_cast hq) hmu hnu hv horder
+  rw [hlength] at hlo
+  have hnormal : (332268561 : ℝ)*(s*r)^3 +
+      ((1073741824 : ℝ)-332268561)*(s*v)^3 =
+      (332268561*r^3+741473263*v^3)*s^3 := by ring
+  rw [hnormal] at hlo
+  have hgain : (536870912 : ℝ) ≤ 332268561*r^3+741473263*v^3 := by
+    norm_num [r, v]
+  have hlow := (mul_le_mul_of_nonneg_right hgain (pow_nonneg hs 3)).trans hlo
+  have hu := canonical_agreement_cube_upper gamma w hinj C 536870912 221512374
+    (by omega) (by norm_num) (by omega) hC T u0 u1 hwC hcompl hwag hno
+  rw [hlength] at hu
+  norm_num at hu
+  have hupper : (∑ x, (agreementDegree T x : ℝ)^3) ≤
+      536870911*s^3 + 886049496*s^2 + 536870913*s := by exact_mod_cast hu
+  have hslarge : (1073741822 : ℝ) ≤ s := by exact_mod_cast hsize
+  have hspos : 0 < s := by linarith
+  have hp : (886049497 : ℝ)*s ≤ s^2 := by
+    have he := mul_le_mul_of_nonneg_right (show (886049497 : ℝ) ≤ s by linarith) hs
+    nlinarith
+  have hgap : 886049496*s + 536870913 < s^2 := by nlinarith
+  have hgapS := mul_lt_mul_of_pos_right hgap hspos
+  nlinarith
+
 end ProximityGap.IncidenceAnchorCubeUpper
 
 #print axioms ProximityGap.IncidenceAnchorCubeUpper.canonical_agreement_cube_upper
+#print axioms ProximityGap.IncidenceAnchorCubeUpper.no_large_external_family_of_triple_anchor

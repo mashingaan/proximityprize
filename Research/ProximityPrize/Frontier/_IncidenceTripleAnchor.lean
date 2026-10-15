@@ -176,6 +176,40 @@ theorem agreement_cube_lower_of_counts
   exact two_region_cube_lower Q (fun x => (agreementDegree T x : ℝ)) mu nu
     (fun x => Nat.cast_nonneg _) hnupos horder hins htot
 
+/-- A fixed support cap gives a uniform cubic bound for actual agreements. -/
+theorem agreement_cube_lower_uniform_of_counts
+    {I Coord : Type} [Fintype I] [Fintype Coord] [DecidableEq Coord]
+    (T : I → Finset Coord) (Q : Finset Coord) (A B : ℕ) (qcap mu nu : ℝ)
+    (hinside : ∀ i, A ≤ (T i ∩ Q).card)
+    (htotal : ∀ i, A+B ≤ (T i).card)
+    (hcap : (Q.card : ℝ) ≤ qcap)
+    (hmu : qcap * mu = (Fintype.card I : ℝ) * A)
+    (hnu : ((Fintype.card Coord : ℝ)-qcap) * nu = (Fintype.card I : ℝ) * B)
+    (hnupos : 0 ≤ nu) (horder : nu ≤ mu) :
+    qcap * mu^3 + ((Fintype.card Coord : ℝ)-qcap) * nu^3 ≤
+      ∑ x, (agreementDegree T x : ℝ)^3 := by
+  classical
+  have hinsNat : Fintype.card I * A ≤ ∑ x ∈ Q, agreementDegree T x := by
+    rw [agreement_mass_on_region]
+    simpa using Finset.sum_le_sum (fun i (_ : i ∈ Finset.univ) => hinside i)
+  have htotNat : Fintype.card I * (A+B) ≤ ∑ x, agreementDegree T x := by
+    have hm := agreement_mass_on_region T (Finset.univ : Finset Coord)
+    simp only [Finset.inter_univ] at hm
+    rw [hm]
+    simpa using Finset.sum_le_sum (fun i (_ : i ∈ Finset.univ) => htotal i)
+  have hins : qcap * mu ≤ ∑ x ∈ Q, (agreementDegree T x : ℝ) := by
+    rw [hmu]
+    exact_mod_cast hinsNat
+  have htot : qcap * mu + ((Fintype.card Coord : ℝ)-qcap) * nu ≤
+      ∑ x, (agreementDegree T x : ℝ) := by
+    rw [hmu, hnu]
+    have he : (Fintype.card I : ℝ) * (A+B) ≤
+        ∑ x, (agreementDegree T x : ℝ) := by exact_mod_cast htotNat
+    push_cast at he
+    nlinarith
+  exact uniform_two_region_cube_lower Q (fun x => (agreementDegree T x : ℝ))
+    qcap mu nu (fun x => Nat.cast_nonneg _) hnupos horder hcap hins htot
+
 /-- Every external actual witness contributes the regional and total agreement
 counts needed by the cube theorem. Only its individual error budget is assumed. -/
 theorem external_family_two_region_cube
@@ -224,3 +258,4 @@ end ProximityGap.IncidenceTripleAnchor
 #print axioms ProximityGap.IncidenceTripleAnchor.agreement_cube_lower_of_counts
 #print axioms ProximityGap.IncidenceTripleAnchor.external_family_two_region_cube
 #print axioms ProximityGap.IncidenceTripleAnchor.uniform_two_region_cube_lower
+#print axioms ProximityGap.IncidenceTripleAnchor.agreement_cube_lower_uniform_of_counts
