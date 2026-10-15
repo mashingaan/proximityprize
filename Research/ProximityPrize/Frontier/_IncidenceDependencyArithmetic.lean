@@ -107,11 +107,11 @@ theorem received_space_shortening_bound {F Coord : Type*} [Field F]
   classical
   have hid := Submodule.finrank_sup_add_finrank_inf_eq V C
   have hCP := Submodule.finrank_sup_add_finrank_inf_eq C P
-  have hle : Module.finrank F (V ⊔ C) ≤ Module.finrank F (C ⊔ P) :=
+  have hle : Module.finrank F ↥(V ⊔ C) ≤ Module.finrank F ↥(C ⊔ P) :=
     Submodule.finrank_mono (sup_le hVP le_sup_left)
-  have hdim : Module.finrank F V ≤ Module.finrank F (V ⊓ C) + 2 := by
+  have hdim : Module.finrank F V ≤ Module.finrank F ↥(V ⊓ C) + 2 := by
     omega
-  have hpos : 0 < Module.finrank F (V ⊓ C) := by omega
+  have hpos : 0 < Module.finrank F ↥(V ⊓ C) := by omega
   have hbot : V ⊓ C ≠ ⊥ := by
     intro h
     rw [h] at hpos
