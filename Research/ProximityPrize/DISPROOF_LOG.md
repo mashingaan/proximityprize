@@ -54044,3 +54044,9 @@ and `scripts/lake-locked.sh build Research.ProximityPrize.Frontier._MCAGoodRadiu
 The four printed declarations use only `propext`, `Classical.choice`, and
 `Quot.sound`. The initial tracked build passed 3502 jobs. Full repository and
 hosted gates must be reported separately.
+
+### Global relation rank/shortening scalar relaxation does not exclude an overbudget ledger
+
+The kernel-checked projected-kernel inequality alone does not improve the current first-sponsor floor. Exact probe `scripts/probes/probe_multiline_rank_ledger_slack.py`, verified by hosted run 38705413587 at 6c2c25449b2d5c0b0f385100b175b1cb3506a434, passes at n=1073741824, D=536870913, t=221512374 with L=357913942 three-head lines and 3L=n+2 witnesses. Set total rank R=536870914, relation dimension h=178956970, every relation projection rank two, shared support n and each plane support 332268561. The global shared-shortening inequality has zero slack. The scalar support budgets and independent-subfamily union capacities also pass.
+
+Scope: this refutes exclusion by the listed scalar relaxation only. No actual support family, code, bad-witness family or Reed-Solomon instance is constructed. Full moment constraints are not included. Further progress needs compatibility of real supports or simultaneous root directions, or another condition absent from the relaxation. This is not a counterexample to proximity and establishes no new threshold.
