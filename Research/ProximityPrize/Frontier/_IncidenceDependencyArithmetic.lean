@@ -421,6 +421,73 @@ theorem affine_head_relation_shortening {F I Coord : Type*} [Field F]
   exact projected_relation_shortening C P _ _ D hDpos hP hW
     (fun i => affine_error_plane_support u₀ u₁ (U i) (V i)) hactive hdistance
 
+noncomputable def affineHeadErrors {F Coord : Type*} [Field F] [Fintype Coord]
+    (u₀ u₁ U V : Coord → F) (a : F) : Finset Coord := by
+  classical
+  exact Finset.univ.filter (fun x => u₀ x + a * u₁ x ≠ U x + a * V x)
+
+/-- The plane support lies in the union of errors of any two distinct heads. -/
+theorem affine_support_pair_cover {F Coord : Type*} [Field F] [Fintype Coord]
+    (u₀ u₁ U V : Coord → F) (a b : F) (hab : a ≠ b) :
+    affineErrorSupport u₀ u₁ U V ⊆
+      affineHeadErrors u₀ u₁ U V a ∪ affineHeadErrors u₀ u₁ U V b := by
+  classical
+  intro x hx
+  by_contra hnot
+  have hpair : x ∉ affineHeadErrors u₀ u₁ U V a ∧
+      x ∉ affineHeadErrors u₀ u₁ U V b := by
+    simpa only [Finset.mem_union, not_or] using hnot
+  have ha : u₀ x + a * u₁ x = U x + a * V x := by
+    simpa [affineHeadErrors] using hpair.1
+  have hb : u₀ x + b * u₁ x = U x + b * V x := by
+    simpa [affineHeadErrors] using hpair.2
+  have he : (a - b) * (u₁ x - V x) = 0 := by
+    linear_combination ha - hb
+  have h₁ : u₁ x = V x :=
+    sub_eq_zero.mp ((mul_eq_zero.mp he).resolve_left (sub_ne_zero.mpr hab))
+  have h₀ : u₀ x = U x := by
+    rw [h₁] at ha
+    exact add_right_cancel ha
+  simpa [affineErrorSupport, h₀, h₁] using hx
+
+/-- A set covered by every pair of three sets has incidence at least twice its size. -/
+theorem three_pair_cover_card {Coord : Type*} [Fintype Coord] [DecidableEq Coord]
+    (Q : Finset Coord) (E : Fin 3 → Finset Coord)
+    (hpair : ∀ i j, i ≠ j → Q ⊆ E i ∪ E j) :
+    2 * Q.card ≤ ∑ i, (E i).card := by
+  classical
+  have hpoint : ∀ x : Coord,
+      (if x ∈ Q then 2 else 0) ≤ ∑ i : Fin 3, if x ∈ E i then 1 else 0 := by
+    intro x
+    by_cases hx : x ∈ Q
+    · have h₀₁ := hpair 0 1 (by decide) hx
+      have h₀₂ := hpair 0 2 (by decide) hx
+      have h₁₂ := hpair 1 2 (by decide) hx
+      simp only [Finset.mem_union] at h₀₁ h₀₂ h₁₂
+      simp only [if_pos hx, Fin.sum_univ_succ, Fin.sum_univ_zero, add_zero]
+      split_ifs
+      all_goals omega
+    · simp only [if_neg hx]
+      exact Nat.zero_le _
+  have hs := Finset.sum_le_sum (fun x (_ : x ∈ Finset.univ) => hpoint x)
+  rw [Finset.sum_comm] at hs
+  simpa [Finset.sum_ite, mul_comm] using hs
+
+/-- Three distinct nearby heads control the entire error-plane support. -/
+theorem three_head_support_budget {F Coord : Type*} [Field F] [Fintype Coord]
+    [DecidableEq Coord] (u₀ u₁ U V : Coord → F)
+    (a : Fin 3 → F) (ha : Function.Injective a) (t : ℕ)
+    (herrors : ∀ i, (affineHeadErrors u₀ u₁ U V (a i)).card ≤ t) :
+    2 * (affineErrorSupport u₀ u₁ U V).card ≤ 3 * t := by
+  have hp := three_pair_cover_card (affineErrorSupport u₀ u₁ U V)
+    (fun i => affineHeadErrors u₀ u₁ U V (a i))
+    (fun i j hij => affine_support_pair_cover u₀ u₁ U V (a i) (a j)
+      (fun h => hij (ha h)))
+  have hs := Finset.sum_le_sum (fun i (_ : i ∈ Finset.univ) => herrors i)
+  have hc : (∑ _i : Fin 3, t) = 3 * t := by simp
+  rw [hc] at hs
+  exact hp.trans hs
+
 /-- Universal coordinate-count inequality for a minimal multi-line dependency. -/
 theorem coordinate_count_bound (L a k : ℤ)
     (hL : 4 ≤ L) (ha : 1 ≤ a) (haL : a ≤ L)
@@ -503,3 +570,6 @@ end ProximityGap.IncidenceDependencyArithmetic
 #print axioms ProximityGap.IncidenceDependencyArithmetic.affine_parameters_mem_code
 #print axioms ProximityGap.IncidenceDependencyArithmetic.affine_error_plane_support
 #print axioms ProximityGap.IncidenceDependencyArithmetic.affine_head_relation_shortening
+#print axioms ProximityGap.IncidenceDependencyArithmetic.affine_support_pair_cover
+#print axioms ProximityGap.IncidenceDependencyArithmetic.three_pair_cover_card
+#print axioms ProximityGap.IncidenceDependencyArithmetic.three_head_support_budget
