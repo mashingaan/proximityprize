@@ -198,8 +198,80 @@ theorem six_bad_errors_rank_at_least_five
   change 3*S.card ≤ _ at hmass
   omega
 
+/-- Two distinct errors cannot both be dependent extensions of the same four
+selected errors. In particular two five-error full circuits cannot share four
+errors in a canonical overbudget family. -/
+theorem no_two_dependent_error_extensions
+    {F I Coord : Type} [Field F] [Fintype I] [DecidableEq I]
+    [Fintype Coord] [DecidableEq Coord]
+    (hlength : Fintype.card Coord = 1073741824)
+    (gamma : I → F) (w : I → (Coord → F)) (hinj : Function.Injective gamma)
+    (C : Submodule F (Coord → F)) (T : I → Finset Coord) (u0 u1 : Coord → F)
+    (hsize : 1073741825 ≤ Fintype.card I)
+    (hC : ∀ z ∈ C, (∃ B : Finset Coord, B.card ≤ 536870912 ∧
+      ∀ x ∉ B, z x = 0) → z = 0)
+    (hwC : ∀ i, w i ∈ C) (hcompl : ∀ i, (T i)ᶜ.card ≤ 221512374)
+    (hwag : ∀ i, ∀ x ∈ T i, w i x = u0 x + gamma i • u1 x)
+    (hno : ∀ i, ¬ ∃ f0 ∈ C, ∃ f1 ∈ C,
+      ∀ x ∈ T i, f0 x = u0 x ∧ f1 x = u1 x)
+    (a : Fin 6 → I) (ha : Function.Injective a)
+    (c d : Fin 4 → F) (alpha beta : F) (halpha : alpha ≠ 0) (hbeta : beta ≠ 0)
+    (hrel1 : (∑ j : Fin 4, c j •
+      (u0 + gamma (a j.castSucc.castSucc) • u1 - w (a j.castSucc.castSucc))) +
+        alpha • (u0 + gamma (a 4) • u1 - w (a 4)) = 0)
+    (hrel2 : (∑ j : Fin 4, d j •
+      (u0 + gamma (a j.castSucc.castSucc) • u1 - w (a j.castSucc.castSucc))) +
+        beta • (u0 + gamma (a 5) • u1 - w (a 5)) = 0) : False := by
+  classical
+  let e : Fin 6 → (Coord → F) := fun j => u0 + gamma (a j) • u1 - w (a j)
+  let W := Submodule.span F (Set.range (fun j : Fin 4 => e j.castSucc.castSucc))
+  have hsum : ∀ f : Fin 4 → F, (∑ j, f j • e j.castSucc.castSucc) ∈ W := by
+    intro f
+    apply Submodule.sum_mem
+    intro j _
+    exact W.smul_mem _ (Submodule.subset_span ⟨j, rfl⟩)
+  have h4 : e 4 ∈ W := by
+    have he : alpha • e 4 = -(∑ j : Fin 4, c j • e j.castSucc.castSucc) :=
+      eq_neg_iff_add_eq_zero.mpr (by simpa only [e, add_comm] using hrel1)
+    have hm : alpha • e 4 ∈ W := by
+      rw [he]
+      exact W.neg_mem (hsum c)
+    have hi := W.smul_mem alpha⁻¹ hm
+    simpa only [smul_smul, inv_mul_cancel₀ halpha, one_smul] using hi
+  have h5 : e 5 ∈ W := by
+    have he : beta • e 5 = -(∑ j : Fin 4, d j • e j.castSucc.castSucc) :=
+      eq_neg_iff_add_eq_zero.mpr (by simpa only [e, add_comm] using hrel2)
+    have hm : beta • e 5 ∈ W := by
+      rw [he]
+      exact W.neg_mem (hsum d)
+    have hi := W.smul_mem beta⁻¹ hm
+    simpa only [smul_smul, inv_mul_cancel₀ hbeta, one_smul] using hi
+  have hspan : Submodule.span F (Set.range e) ≤ W := by
+    apply Submodule.span_le.mpr
+    rintro z ⟨j, rfl⟩
+    fin_cases j
+    · exact Submodule.subset_span ⟨0, rfl⟩
+    · exact Submodule.subset_span ⟨1, rfl⟩
+    · exact Submodule.subset_span ⟨2, rfl⟩
+    · exact Submodule.subset_span ⟨3, rfl⟩
+    · exact h4
+    · exact h5
+  have hLI := four_bad_errors_linearIndependent_in_overbudget_family hlength
+    gamma w hinj C T u0 u1 hsize hC hwC hcompl hwag hno
+    (fun j : Fin 4 => a j.castSucc.castSucc)
+    (ha.comp ((Fin.castSucc_injective 5).comp (Fin.castSucc_injective 4)))
+  have hdim : Module.finrank F W = 4 := by
+    have hd := finrank_span_eq_card hLI
+    simpa [W, e] using hd
+  have hmono := Submodule.finrank_mono hspan
+  have hlarge := six_bad_errors_rank_at_least_five hlength gamma w hinj C T u0 u1
+    hsize hC hwC hcompl hwag hno a ha
+  change 5 ≤ Module.finrank F (Submodule.span F (Set.range e)) at hlarge
+  omega
+
 end ProximityGap.IncidenceSixErrorRank
 
 #print axioms ProximityGap.IncidenceSixErrorRank.six_rank_four_coordinate_multiplicity
 #print axioms ProximityGap.IncidenceSixErrorRank.six_rank_four_support_mass
 #print axioms ProximityGap.IncidenceSixErrorRank.six_bad_errors_rank_at_least_five
+#print axioms ProximityGap.IncidenceSixErrorRank.no_two_dependent_error_extensions
