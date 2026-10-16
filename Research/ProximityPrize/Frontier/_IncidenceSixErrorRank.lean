@@ -36,7 +36,7 @@ theorem six_rank_four_coordinate_multiplicity
   by_contra hn
   let Z := {j : Fin 6 // e j x = 0}
   have hN : Fintype.card {j : Fin 6 // ¬ e j x = 0} ≤ 2 := by
-    have he := Fintype.card_of_subtype N hNmem
+    rw [Fintype.card_of_subtype (p := fun j : Fin 6 => ¬ e j x = 0) N hNmem]
     omega
   have hcomp := Fintype.card_subtype_compl (fun j : Fin 6 => e j x = 0)
   have hZle := Fintype.card_subtype_le (fun j : Fin 6 => e j x = 0)
