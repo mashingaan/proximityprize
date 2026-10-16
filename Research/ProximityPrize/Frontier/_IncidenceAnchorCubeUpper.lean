@@ -182,7 +182,46 @@ theorem no_large_external_family_of_triple_anchor
   have hgapS := mul_lt_mul_of_pos_right hgap hspos
   nlinarith
 
+/-- Restricting a canonical overbudget family to the complement of a line
+removes the external-family hypothesis from the triple-anchor exclusion. -/
+theorem no_triple_anchor_in_overbudget_family
+    {F I Coord : Type} [Field F] [Fintype I] [DecidableEq I]
+    [Fintype Coord] [DecidableEq Coord]
+    (hlength : Fintype.card Coord = 1073741824)
+    (gamma : I → F) (w : I → (Coord → F)) (hinj : Function.Injective gamma)
+    (C : Submodule F (Coord → F)) (T : I → Finset Coord)
+    (u0 u1 U V : Coord → F) (a : Fin 3 → F) (ha : Function.Injective a)
+    (hheads : ∀ j, U + a j • V ∈ C)
+    (hanchor : ∀ j, (affineHeadErrors u0 u1 U V (a j)).card ≤ 221512374)
+    (hsize : 1073741825 ≤ Fintype.card I)
+    (hC : ∀ z ∈ C, (∃ B : Finset Coord, B.card ≤ 536870912 ∧
+      ∀ x ∉ B, z x = 0) → z = 0)
+    (hwC : ∀ i, w i ∈ C) (hcompl : ∀ i, (T i)ᶜ.card ≤ 221512374)
+    (hwag : ∀ i, ∀ x ∈ T i, w i x = u0 x + gamma i • u1 x)
+    (hno : ∀ i, ¬ ∃ f0 ∈ C, ∃ f1 ∈ C,
+      ∀ x ∈ T i, f0 x = u0 x ∧ f1 x = u1 x) : False := by
+  classical
+  have hcap := bad_witness_line_cap_three gamma w hinj Finset.univ C
+    536870912 221512374 (by simpa using (show 221512374+1 < Fintype.card I by omega))
+    (by norm_num) hC T u0 u1 (fun i _ => hwC i) (fun i _ => hcompl i)
+    (fun i _ => hwag i) (fun i _ => hno i) U V
+  let J := {i : I // ¬ OnLine gamma w U V i}
+  have hline : Fintype.card {i : I // OnLine gamma w U V i} ≤ 3 := by
+    rw [Fintype.card_subtype]
+    exact hcap
+  have hJ : 1073741822 ≤ Fintype.card J := by
+    change 1073741822 ≤ Fintype.card {i : I // ¬ OnLine gamma w U V i}
+    rw [Fintype.card_subtype_compl]
+    omega
+  exact no_large_external_family_of_triple_anchor hlength
+    (fun i : J => gamma i.val) (fun i : J => w i.val)
+    (fun i j h => Subtype.ext (hinj h)) C (fun i : J => T i.val)
+    u0 u1 U V a ha hheads hanchor hJ hC
+    (fun i => hwC i.val) (fun i => hcompl i.val)
+    (fun i => hwag i.val) (fun i => hno i.val) (fun i => i.property)
+
 end ProximityGap.IncidenceAnchorCubeUpper
 
 #print axioms ProximityGap.IncidenceAnchorCubeUpper.canonical_agreement_cube_upper
 #print axioms ProximityGap.IncidenceAnchorCubeUpper.no_large_external_family_of_triple_anchor
+#print axioms ProximityGap.IncidenceAnchorCubeUpper.no_triple_anchor_in_overbudget_family
