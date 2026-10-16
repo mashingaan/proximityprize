@@ -105,7 +105,7 @@ theorem five_bad_error_circuit_shared_support
           ((show P ≤ C ⊔ P from le_sup_right) (Submodule.subset_span (by simp)))))
       ((show C ≤ C ⊔ P from le_sup_left) (hwC (a j)))
   let b : Fin 4 → I := fun j => a j.castSucc
-  have hb : Function.Injective b := ha.comp Fin.castSucc_injective
+  have hb : Function.Injective b := ha.comp (Fin.castSucc_injective 4)
   have hLI := four_bad_errors_linearIndependent_in_overbudget_family hlength
     gamma w hinj C T u0 u1 hsize hC hwC hcompl hwag hno b hb
   change LinearIndependent F (fun j : Fin 4 => e j.castSucc) at hLI
