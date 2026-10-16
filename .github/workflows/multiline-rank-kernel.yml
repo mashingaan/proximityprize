@@ -46,7 +46,7 @@ jobs:
         run: ./scripts/lake-locked.sh exe cache get
       - name: Build the two checked proof dependencies
         run: ./scripts/lake-locked.sh build Research.ProximityPrize.Frontier._IncidenceDependencyArithmetic Research.ProximityPrize.Frontier._IncidenceConstantLineCap Research.ProximityPrize.Frontier._IncidenceErrorCircuit Research.ProximityPrize.Frontier._IncidenceTripleAnchor Research.ProximityPrize.Frontier._IncidenceTripleMass Research.ProximityPrize.Frontier._IncidenceAnchorCubeUpper Research.ProximityPrize.Frontier._IncidenceCircuitShortening
-      - name: Check forty-six declarations and audit axioms
+      - name: Check fifty-four declarations and audit axioms
         run: |
           set -o pipefail
           lake env lean Research/ProximityPrize/Frontier/_IncidenceDependencyArithmetic.lean | tee multiline-axioms.log
@@ -55,17 +55,18 @@ jobs:
           lake env lean Research/ProximityPrize/Frontier/_IncidenceAnchorCubeUpper.lean | tee -a multiline-axioms.log
           lake env lean Research/ProximityPrize/Frontier/_IncidenceCircuitShortening.lean | tee -a multiline-axioms.log
           lake env lean Research/ProximityPrize/Frontier/_IncidenceSixErrorRank.lean | tee -a multiline-axioms.log
+          lake env lean Research/ProximityPrize/Frontier/_IncidenceCircuitTripleBudget.lean | tee -a multiline-axioms.log
           python3 - <<'PY'
           import re
           from pathlib import Path
           text = Path('multiline-axioms.log').read_text()
           assert 'sorryAx' not in text
-          matches = re.findall(r"'(ProximityGap\.(?:IncidenceDependencyArithmetic|IncidenceErrorCircuit|IncidenceTripleAnchor|IncidenceAnchorCubeUpper|IncidenceCircuitShortening|IncidenceSixErrorRank)\.[^']+)'\s+(?:depends on axioms:\s*\[([^\]]*)\]|(does not depend on any axioms))",text)
-          expected = {'coordinate_count_bound','shortened_subspace_bound','quotient_shortening_bound','received_space_shortening_bound','relation_component_shared_support','relation_core_shared_support','relation_core_shortening','relation_core_dimension','projected_relation_shortening','affine_parameters_mem_code','affine_error_plane_support','affine_head_relation_shortening','affine_support_pair_cover','three_pair_cover_card','three_head_support_budget','dependency_necessary','dependency_from_coordinate_ledger','literal_dependency_excluded','shared_support_incidence_budget','projected_relation_incidence_budget','affine_heads_of_small_error_relation','no_four_full_error_relation','bad_head_received_coefficients','received_quotient_independent_of_two_bad_heads','error_relation_received_coefficients','two_scalar_coefficients_zero','three_bad_errors_linearIndependent','four_bad_errors_linearIndependent_of_no_collinear_triple','external_head_anchor_overlap','two_region_cube_lower','agreement_mass_on_region','agreement_cube_lower_of_counts','external_family_two_region_cube','uniform_two_region_cube_lower','canonical_agreement_cube_upper','agreement_cube_lower_uniform_of_counts','no_large_external_family_of_triple_anchor','no_triple_anchor_in_overbudget_family','no_collinear_triple_in_overbudget_family','four_bad_errors_linearIndependent_in_overbudget_family','full_relation_shared_support','five_bad_error_circuit_shared_support','six_rank_four_coordinate_multiplicity','six_rank_four_support_mass','six_bad_errors_rank_at_least_five','no_two_dependent_error_extensions'}
+          matches = re.findall(r"'(ProximityGap\.(?:IncidenceDependencyArithmetic|IncidenceErrorCircuit|IncidenceTripleAnchor|IncidenceAnchorCubeUpper|IncidenceCircuitShortening|IncidenceSixErrorRank|IncidenceCircuitTripleBudget)\.[^']+)'\s+(?:depends on axioms:\s*\[([^\]]*)\]|(does not depend on any axioms))",text)
+          expected = {'coordinate_count_bound','shortened_subspace_bound','quotient_shortening_bound','received_space_shortening_bound','relation_component_shared_support','relation_core_shared_support','relation_core_shortening','relation_core_dimension','projected_relation_shortening','affine_parameters_mem_code','affine_error_plane_support','affine_head_relation_shortening','affine_support_pair_cover','three_pair_cover_card','three_head_support_budget','dependency_necessary','dependency_from_coordinate_ledger','literal_dependency_excluded','shared_support_incidence_budget','projected_relation_incidence_budget','affine_heads_of_small_error_relation','no_four_full_error_relation','bad_head_received_coefficients','received_quotient_independent_of_two_bad_heads','error_relation_received_coefficients','two_scalar_coefficients_zero','three_bad_errors_linearIndependent','four_bad_errors_linearIndependent_of_no_collinear_triple','external_head_anchor_overlap','two_region_cube_lower','agreement_mass_on_region','agreement_cube_lower_of_counts','external_family_two_region_cube','uniform_two_region_cube_lower','canonical_agreement_cube_upper','agreement_cube_lower_uniform_of_counts','no_large_external_family_of_triple_anchor','no_triple_anchor_in_overbudget_family','no_collinear_triple_in_overbudget_family','four_bad_errors_linearIndependent_in_overbudget_family','full_relation_shared_support','five_bad_error_circuit_shared_support','six_rank_four_coordinate_multiplicity','six_rank_four_support_mass','six_bad_errors_rank_at_least_five','no_two_dependent_error_extensions','five_boolean_circuit_budget','six_boolean_circuit_budget','full_relation_degree_ne_one','full_relation_triple_mass_bound','independent_of_full_relation_and_deletions','no_full_bad_error_relation_of_triple_budget','five_bad_errors_linearIndependent','six_bad_errors_linearIndependent'}
           assert {name.rsplit('.',1)[1] for name,_,_ in matches} == expected
-          assert len(matches) == 46
+          assert len(matches) == 54
           for name,names,no_axioms in matches:
               if not no_axioms:
                   assert set(name.strip() for name in names.split(',')) <= {'propext','Classical.choice','Quot.sound'}
-          print('Forty-six structural and finite-ledger declarations kernel checked')
+          print('Fifty-four structural and finite-ledger declarations kernel checked')
           PY
