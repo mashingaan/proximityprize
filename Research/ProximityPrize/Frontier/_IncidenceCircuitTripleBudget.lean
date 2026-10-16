@@ -176,7 +176,7 @@ theorem no_full_bad_error_relation_of_triple_budget
     (a : Fin m → I) (ha : Function.Injective a)
     (c : Fin m → F) (hc : ∀ j, c j ≠ 0) :
     (∑ j, c j • (u0 + gamma (a j) • u1 - w (a j))) ≠ 0 := by
-  classical
+  letI : DecidableEq F := Classical.decEq F
   intro hrel
   let e : Fin m → (Coord → F) := fun j => u0 + gamma (a j) • u1 - w (a j)
   let E : Fin m → Finset Coord := fun j => Finset.univ.filter (fun x => e j x ≠ 0)
@@ -233,7 +233,7 @@ theorem no_full_bad_error_relation_of_triple_budget
       (fun j => w (a j)) (hinj.comp ha) C 536870912 hC (fun j => (E j)ᶜ)
       u0 u1 hab (hwC (a p.1)) (hwC (a p.2.1)) (hwC (a p.2.2))
       (hag p.1) (hag p.2.1) (hag p.2.2) hnc
-    simpa only [Finset.compl_compl] using Nat.succ_le_of_lt hu
+    simpa using Nat.succ_le_of_lt hu
   have hl := Finset.sum_le_sum hlower
   have hu := full_relation_triple_mass_bound k hbool e E hE c hc hrel
   have hw := Finset.sum_le_sum (fun j (_ : j ∈ Finset.univ) => hweight j)
@@ -242,7 +242,9 @@ theorem no_full_bad_error_relation_of_triple_budget
       ∑ p ∈ distinctTriples m, ((E p.1 ∪ E p.2.1) ∪ E p.2.2).card := by
     simpa using hl
   have hupper := hu.trans (Nat.mul_le_mul_left k hcard)
-  omega
+  have hbad : (distinctTriples m).card*536870913 ≤ k*m*221512374 := by
+    simpa only [Nat.mul_assoc] using hlow.trans hupper
+  exact (Nat.not_lt_of_ge hbad) hgap
 
 theorem five_bad_errors_linearIndependent
     {F I Coord : Type} [Field F] [Fintype I] [DecidableEq I]
