@@ -6,6 +6,7 @@ Authors: Mikhail Izhutkin (mashingaan)
 import Research.ProximityPrize.Frontier._IncidenceTripleAnchor
 import Research.ProximityPrize.Frontier._IncidenceTripleMass
 import Research.ProximityPrize.Frontier._IncidenceConstantLineCap
+import Research.ProximityPrize.Frontier._IncidenceErrorCircuit
 
 /-!
 # Canonical upper cube for agreement degrees
@@ -220,8 +221,73 @@ theorem no_triple_anchor_in_overbudget_family
     (fun i => hwC i.val) (fun i => hcompl i.val)
     (fun i => hwag i.val) (fun i => hno i.val) (fun i => i.property)
 
+/-- Three distinct selected heads in a canonical overbudget family are never
+collinear at the literal first-sponsor radius. -/
+theorem no_collinear_triple_in_overbudget_family
+    {F I Coord : Type} [Field F] [Fintype I] [DecidableEq I]
+    [Fintype Coord] [DecidableEq Coord]
+    (hlength : Fintype.card Coord = 1073741824)
+    (gamma : I → F) (w : I → (Coord → F)) (hinj : Function.Injective gamma)
+    (C : Submodule F (Coord → F)) (T : I → Finset Coord) (u0 u1 : Coord → F)
+    (hsize : 1073741825 ≤ Fintype.card I)
+    (hC : ∀ z ∈ C, (∃ B : Finset Coord, B.card ≤ 536870912 ∧
+      ∀ x ∉ B, z x = 0) → z = 0)
+    (hwC : ∀ i, w i ∈ C) (hcompl : ∀ i, (T i)ᶜ.card ≤ 221512374)
+    (hwag : ∀ i, ∀ x ∈ T i, w i x = u0 x + gamma i • u1 x)
+    (hno : ∀ i, ¬ ∃ f0 ∈ C, ∃ f1 ∈ C,
+      ∀ x ∈ T i, f0 x = u0 x ∧ f1 x = u1 x)
+    (b : Fin 3 → I) (hb : Function.Injective b) :
+    ¬ ∃ U V, ∀ j, w (b j) = U + gamma (b j) • V := by
+  classical
+  rintro ⟨U, V, hline⟩
+  have hheads : ∀ j, U + gamma (b j) • V ∈ C := by
+    intro j
+    rw [← hline j]
+    exact hwC (b j)
+  have hanchor : ∀ j,
+      (affineHeadErrors u0 u1 U V (gamma (b j))).card ≤ 221512374 := by
+    intro j
+    apply (Finset.card_le_card (show affineHeadErrors u0 u1 U V
+      (gamma (b j)) ⊆ (T (b j))ᶜ from ?_)).trans (hcompl (b j))
+    intro x hx
+    apply Finset.mem_compl.mpr
+    intro hxT
+    have he := hwag (b j) x hxT
+    rw [hline j] at he
+    have hne := (Finset.mem_filter.mp hx).2
+    apply hne
+    simpa only [Pi.add_apply, Pi.smul_apply, smul_eq_mul] using he.symm
+  exact no_triple_anchor_in_overbudget_family hlength gamma w hinj C T u0 u1
+    U V (fun j => gamma (b j)) (hinj.comp hb) hheads hanchor hsize hC
+    hwC hcompl hwag hno
+
+/-- Every four selected actual errors are independent. No geometric condition
+on the selected heads is supplied by the caller. -/
+theorem four_bad_errors_linearIndependent_in_overbudget_family
+    {F I Coord : Type} [Field F] [Fintype I] [DecidableEq I]
+    [Fintype Coord] [DecidableEq Coord]
+    (hlength : Fintype.card Coord = 1073741824)
+    (gamma : I → F) (w : I → (Coord → F)) (hinj : Function.Injective gamma)
+    (C : Submodule F (Coord → F)) (T : I → Finset Coord) (u0 u1 : Coord → F)
+    (hsize : 1073741825 ≤ Fintype.card I)
+    (hC : ∀ z ∈ C, (∃ B : Finset Coord, B.card ≤ 536870912 ∧
+      ∀ x ∉ B, z x = 0) → z = 0)
+    (hwC : ∀ i, w i ∈ C) (hcompl : ∀ i, (T i)ᶜ.card ≤ 221512374)
+    (hwag : ∀ i, ∀ x ∈ T i, w i x = u0 x + gamma i • u1 x)
+    (hno : ∀ i, ¬ ∃ f0 ∈ C, ∃ f1 ∈ C,
+      ∀ x ∈ T i, f0 x = u0 x ∧ f1 x = u1 x)
+    (a : Fin 4 → I) (ha : Function.Injective a) :
+    LinearIndependent F (fun j => u0 + gamma (a j) • u1 - w (a j)) := by
+  exact ProximityGap.IncidenceErrorCircuit.four_bad_errors_linearIndependent_of_no_collinear_triple
+    gamma w hinj C 536870912 221512374 (by omega) (by norm_num) hC T u0 u1
+    hwC hcompl hwag hno
+    (no_collinear_triple_in_overbudget_family hlength gamma w hinj C T u0 u1
+      hsize hC hwC hcompl hwag hno) a ha
+
 end ProximityGap.IncidenceAnchorCubeUpper
 
 #print axioms ProximityGap.IncidenceAnchorCubeUpper.canonical_agreement_cube_upper
 #print axioms ProximityGap.IncidenceAnchorCubeUpper.no_large_external_family_of_triple_anchor
 #print axioms ProximityGap.IncidenceAnchorCubeUpper.no_triple_anchor_in_overbudget_family
+#print axioms ProximityGap.IncidenceAnchorCubeUpper.no_collinear_triple_in_overbudget_family
+#print axioms ProximityGap.IncidenceAnchorCubeUpper.four_bad_errors_linearIndependent_in_overbudget_family
