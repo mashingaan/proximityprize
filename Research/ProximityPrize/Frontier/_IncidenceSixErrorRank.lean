@@ -29,13 +29,14 @@ theorem six_rank_four_coordinate_multiplicity
     (hLI : ∀ b : Fin 4 → Fin 6, Function.Injective b →
       LinearIndependent F (fun j => e (b j)))
     (hrank : Module.finrank F (Submodule.span F (Set.range e)) ≤ 4)
-    (x : Coord) (hactive : ∃ j, e j x ≠ 0) :
-    3 ≤ (Finset.univ.filter (fun j => e j x ≠ 0)).card := by
+    (x : Coord) (hactive : ∃ j, e j x ≠ 0)
+    (N : Finset (Fin 6)) (hNmem : ∀ j, j ∈ N ↔ e j x ≠ 0) :
+    3 ≤ N.card := by
   classical
   by_contra hn
   let Z := {j : Fin 6 // e j x = 0}
   have hN : Fintype.card {j : Fin 6 // ¬ e j x = 0} ≤ 2 := by
-    rw [Fintype.card_subtype]
+    have he := Fintype.card_of_subtype N hNmem
     omega
   have hcomp := Fintype.card_subtype_compl (fun j : Fin 6 => e j x = 0)
   have hZle := Fintype.card_subtype_le (fun j : Fin 6 => e j x = 0)
@@ -51,7 +52,8 @@ theorem six_rank_four_coordinate_multiplicity
     have hs : bz i = bz j := Subtype.ext hij
     have hf : Fin.castLE hZcard i = Fin.castLE hZcard j :=
       (Fintype.equivFin Z).symm.injective hs
-    exact Fin.ext (congrArg Fin.val hf)
+    apply Fin.ext
+    exact congrArg (fun k : Fin (Fintype.card Z) => k.val) hf
   have hLIb := hLI b hb
   have hspan : Submodule.span F (Set.range (fun j => e (b j))) ≤
       Submodule.span F (Set.range e) := by
@@ -94,6 +96,7 @@ theorem six_rank_four_support_mass
     by_cases hx : x ∈ S
     · have hmul := six_rank_four_coordinate_multiplicity e hLI hrank x
         ((Finset.mem_filter.mp hx).2)
+        (Finset.univ.filter (fun j => e j x ≠ 0)) (fun j => by simp)
       have hcount : (Finset.univ.filter (fun j => e j x ≠ 0)).card ≤
           ∑ j : Fin 6, if x ∈ Q j then 1 else 0 := by
         rw [Finset.card_filter]
