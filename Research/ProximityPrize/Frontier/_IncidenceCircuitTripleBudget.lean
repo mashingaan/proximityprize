@@ -14,6 +14,8 @@ literal first-sponsor distance and error budgets.
 -/
 
 set_option autoImplicit false
+set_option maxRecDepth 4096
+set_option maxHeartbeats 1000000
 
 namespace ProximityGap.IncidenceCircuitTripleBudget
 
@@ -98,7 +100,13 @@ theorem full_relation_triple_mass_bound
     intro x
     let b : Fin m → Bool := fun i => decide (x ∈ E i)
     have hd : booleanDegree b = (Finset.univ.filter (fun i => x ∈ E i)).card := by
-      simp [booleanDegree, b, Finset.card_filter]
+      unfold booleanDegree
+      rw [Finset.card_filter]
+      apply Finset.sum_congr rfl
+      intro i _
+      by_cases hi : x ∈ E i
+      · simp [b, hi]
+      · simp [b, hi]
     have hn : booleanDegree b ≠ 1 := by
       rw [hd]
       exact full_relation_degree_ne_one e E hE c hc hrel x
@@ -109,7 +117,14 @@ theorem full_relation_triple_mass_bound
       if x ∈ (E p.1 ∪ E p.2.1) ∪ E p.2.2 then 1 else 0) =
       ∑ p ∈ distinctTriples m, ((E p.1 ∪ E p.2.1) ∪ E p.2.2).card := by
     rw [Finset.sum_comm]
-    simp [Finset.sum_ite]
+    apply Finset.sum_congr rfl
+    intro p _
+    let S := (E p.1 ∪ E p.2.1) ∪ E p.2.2
+    have hf : Finset.univ.filter (fun x => x ∈ S) = S := by
+      ext x
+      simp
+    change (∑ x, if x ∈ S then 1 else 0) = S.card
+    rw [← Finset.card_filter, hf]
   have hright : (∑ x, k * ∑ i, if x ∈ E i then 1 else 0) =
       k * ∑ i, (E i).card := by
     rw [← Finset.mul_sum, Finset.sum_comm]
@@ -191,8 +206,18 @@ theorem no_full_bad_error_relation_of_triple_budget
     have hb : Function.Injective b := by
       intro i j hij
       fin_cases i
-      all_goals fin_cases j
-      all_goals simp_all [b]
+      · fin_cases j
+        · rfl
+        · exact False.elim (hab (by simpa [b] using hij))
+        · exact False.elim (hac (by simpa [b] using hij))
+      · fin_cases j
+        · exact False.elim (hab (by simpa [b] using hij.symm))
+        · rfl
+        · exact False.elim (hbc (by simpa [b] using hij))
+      · fin_cases j
+        · exact False.elim (hac (by simpa [b] using hij.symm))
+        · exact False.elim (hbc (by simpa [b] using hij.symm))
+        · rfl
     have hnc : ¬ CollinearTriple (fun j => gamma (a j)) (fun j => w (a j))
         p.1 p.2.1 p.2.2 := by
       rintro ⟨U, V, h0, h1, h2⟩
