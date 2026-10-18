@@ -81,3 +81,46 @@ to a false statement.
 This fixture is a discriminating test for the active research direction.
 No claim of novelty for small-field proximity-gap failures is made. It does not
 establish a new production floor, a sponsor upper bound, or a SlopCash award.
+
+## Global rank of this fixed pattern
+
+`probe_rs10_global_constraint_rank.py` forms the simultaneous constraints on
+both received rows, instead of inspecting the eleven locators separately.
+Subtract from each received row its degree-at-most-four interpolant on nodes
+1,...,5. This does not change whether any selected agreement set has a joint
+code explanation. The two normalized rows have ten remaining coordinates in
+total, on nodes 6,...,10.
+
+For each seven-node agreement set, fix five of its nodes and use each of the
+two additional nodes to form a six-node dual interpolation constraint. Clearing
+denominators and dividing the integer content gives two primitive integer rows
+of the form [a,z*a]. All eleven agreement sets yield a 22-by-10 integer matrix M.
+Its rational rank is ten, while its rank modulo eleven is nine. An independently
+checked ten-square minor has determinant 157055976. Smith normal form reports
+nine unit invariant factors and a final factor eleven, initially as a diagnostic.
+
+The stronger certificate constructed by the probe is an integer 10-by-22
+matrix L satisfying
+
+    L*M = 11*I_10.
+
+The probe constructs L from Bezout combinations of square minors and verifies
+all one hundred entries of this identity by direct integer multiplication.
+This avoids relying on a Smith-form output alone for the exceptional-prime claim.
+For any field of characteristic different from eleven, the image of M therefore
+has trivial kernel. In characteristic eleven its independently computed rank is
+nine. Thus eleven is the only exceptional characteristic of this integer matrix.
+
+For the RS interpretation, take characteristic zero or a prime characteristic
+greater than ten, so the node labels and all interpolation denominators are
+distinct and invertible. At every characteristic other than eleven, the fixed
+agreement pattern with these fixed scalar labels forces both received rows to
+be codewords. In characteristic eleven there is one extra degree of freedom
+after removing the code components. Appending the separate-row constraints for
+any one of the eleven agreement sets raises the modular rank from nine to ten,
+so each set detects that extra degree of freedom.
+
+This is a global rank certificate for one fully specified pattern. It is not a
+bound for all agreement patterns, movable scalar parameters, or cyclotomic lifts
+of the domain. In particular, it does not justify a uniform small upper bound
+on exceptional characteristics for the sponsor-scale matrices.
