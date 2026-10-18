@@ -158,10 +158,64 @@ def structured_case(p, moving_degree, fixed_nodes):
                 filtered_cofactor_degree=int(sp.degree(filtered_cofactor, z)))
 
 
+def two_dimensional_locator_obstruction():
+    """Actual RS[6,3] words over F_7, not just abstract moments."""
+    p = 7
+    domain = list(range(1, p))
+    code = {tuple((a + b*x + c*x*x) % p for x in domain)
+            for a, b, c in product(range(p), repeat=3)}
+    assert len(code) == p**3
+
+    def syndrome(word):
+        # Dual multipliers for X^6-1 are -x over F_7.
+        return tuple(sum(-x * word[i] * pow(x, j, p)
+                         for i, x in enumerate(domain)) % p for j in range(3))
+
+    assert all(syndrome(word) == (0, 0, 0) for word in code)
+    targets = [(1, 1, 0), (0, 0, 1)]
+    received = []
+    for target in targets:
+        matches = [tuple(coeff) + (0, 0, 0)
+                   for coeff in product(range(p), repeat=3)
+                   if syndrome(tuple(coeff)+(0, 0, 0)) == target]
+        assert len(matches) == 1
+        received.append(matches[0])
+    u0, u1 = received
+    witnesses = []
+    for z in range(p):
+        word = tuple((a + z*b) % p for a, b in zip(u0, u1))
+        assert syndrome(word) == (1, 1, z)
+        close = [w for w in sorted(code) if sum(a != b for a, b in zip(word, w)) <= 2]
+        assert close
+        chosen = None
+        for head in close:
+            agreement = [i for i in range(6) if word[i] == head[i]]
+            explanations = [any(all(c[i] == row[i] for i in agreement) for c in code)
+                            for row in received]
+            if not all(explanations):
+                chosen = dict(parameter=z, head=list(head),
+                              agreement_nodes=[domain[i] for i in agreement],
+                              error_weight=6-len(agreement))
+                break
+        assert chosen is not None, (z, close)
+        witnesses.append(chosen)
+    # Locator equation is b+a+z=0 for E=X^2+aX+b.
+    # A single choice a=0 does not account for every bad parameter.
+    fixed_direction = [z for z in range(p)
+                       if len([x for x in domain if x*x % p == z]) == 2]
+    assert len(witnesses) == 7 > len(domain)
+    assert len(fixed_direction) == 3
+    return dict(field=p, length=6, dimension=3, error_budget=2,
+                locator_kernel_dimension=2, u0=list(u0), u1=list(u1),
+                bad_witnesses=witnesses, fixed_locator_parameters=fixed_direction,
+                scope='toy RS counterexample to a one-locator extension')
+
+
 if __name__ == '__main__':
     report = dict(exhaustive_rank_two=exhaustive_rank_two(),
                   structured=[structured_case(7, 3, []),
                               structured_case(17, 4, [1]),
                               structured_case(19, 6, [1, 2])],
+                  multidimensional_obstruction=two_dimensional_locator_obstruction(),
                   production_threshold_proved=False)
     print(json.dumps(report, indent=2))

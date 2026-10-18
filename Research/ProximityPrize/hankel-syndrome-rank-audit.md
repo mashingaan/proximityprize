@@ -127,6 +127,16 @@ this module, coupled to the fixed evaluation domain and the original agreement
 sets. Treating it as one kernel vector would discard precisely the interaction
 that needs to be controlled. A primitive-vector lemma alone is insufficient.
 
+The probe also constructs an actual RS[6,3] example on F_7 nonzero evaluation
+nodes at error budget two. With dual multipliers -x, its received syndromes are
+(1,1,z). The locator equation is b+a+z=0 for X^2+aX+b, so the locator kernel has
+dimension two. Every one of the seven parameters has a bad witness with at
+least four agreement nodes. The code is enumerated directly, and the absence
+of a joint explanation on each selected agreement set is checked against all
+343 codewords. The single family X^2-z covers only three parameters. This is
+a toy obstruction to extending the one-locator argument, not a sponsor
+counterexample or a claim that this toy radius obstruction is new.
+
 ## Reproducible finite audit
 
 `scripts/probes/probe_hankel_syndrome_pencils.py` has two independent parts.
