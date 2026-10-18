@@ -47,6 +47,8 @@ def exhaustive_rank_two():
     def gcd(a, b):
         while b != (0,):
             a, b = b, divmod_poly(a, b)[1]
+        if a == (0,):
+            return a
         return trim([x * pow(a[-1], -1, p) for x in a])
 
     counts = dict(pencils=0, singular=0, rank_two=0, moving=0, stationary=0)
