@@ -8,6 +8,7 @@ from functools import reduce
 from math import gcd, lcm
 from pathlib import Path
 import json
+import random
 import sympy as sp
 from sympy.matrices.normalforms import smith_normal_form
 
@@ -49,6 +50,50 @@ def bareiss_determinant(rows):
             a[i][k] = 0
         previous = value
     return sign*a[-1][-1]
+
+
+def bezout(a, b):
+    old_r, r, old_s, s, old_t, t = a, b, 1, 0, 0, 1
+    while r:
+        quotient = old_r//r
+        old_r, r = r, old_r-quotient*r
+        old_s, s = s, old_s-quotient*s
+        old_t, t = t, old_t-quotient*t
+    if old_r < 0:
+        return -old_r, -old_s, -old_t
+    return old_r, old_s, old_t
+
+
+def integer_left_certificate(rows, first_pivots):
+    current, left = 0, [[0]*len(rows) for _ in range(10)]
+    rng = random.Random(239164)
+    selections = [first_pivots] + [sorted(rng.sample(range(len(rows)), 10)) for _ in range(100)]
+    used = []
+    for selected in selections:
+        square_rows = [rows[i] for i in selected]
+        determinant = bareiss_determinant(square_rows)
+        if determinant == 0:
+            continue
+        new_gcd, a, b = bezout(current, determinant)
+        if new_gcd == current:
+            continue
+        adjugate = sp.Matrix(square_rows).adjugate()
+        component = [[0]*len(rows) for _ in range(10)]
+        for i in range(10):
+            for j, index in enumerate(selected):
+                component[i][index] = int(adjugate[i, j])
+        left = [[a*x+b*y for x, y in zip(row, other)]
+                for row, other in zip(left, component)]
+        current = new_gcd
+        used.append(dict(rows=selected, determinant=determinant, gcd_so_far=current))
+        if current == 11:
+            break
+    assert current == 11
+    # Direct integer multiplication verifies the certificate independently
+    # of Smith normal form and symbolic adjugate construction.
+    assert all(sum(left[i][a]*rows[a][j] for a in range(len(rows))) == 11*int(i == j)
+               for i in range(10) for j in range(10))
+    return left, used
 
 
 def main():
@@ -93,11 +138,21 @@ def main():
     assert abs(determinant) % reduce(lambda x, y: x*y, invariants, 1) == 0
     rank11 = modular_rank(rows, 11)
     assert rank11 < rank_q
+    left, used = integer_left_certificate(rows, pivots)
+    augmented_ranks = []
+    for z in range(11):
+        extra = [[0]*5+row[:5] for row, label in zip(rows, labels) if label['parameter'] == z]
+        augmented_ranks.append(modular_rank(rows+extra, 11))
+    assert augmented_ranks == [10]*11
     print(json.dumps(dict(result='EXACT_FIXED_PATTERN_RANK_DROP',
                           matrix_shape=[len(rows), 10], rational_rank=rank_q,
                           rank_mod_11=rank11, pivot_row_indices=pivots,
                           full_rank_minor=minor_rows, minor_determinant=determinant,
                           smith_invariants_diagnostic=invariants,
+                          integer_left_certificate=left,
+                          left_certificate_scalar=11,
+                          bezout_minor_history=used,
+                          individually_augmented_ranks_mod_11=augmented_ranks,
                           row_certificates=labels,
                           scope='fixed integer nodes and parameters only',
                           sponsor_bound_proved=False), indent=2))
