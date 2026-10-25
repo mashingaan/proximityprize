@@ -1,0 +1,70 @@
+name: Fork full validation
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: fork-full-validation
+  cancel-in-progress: false
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: 9b7e69d2d7b70e84c5f0cd9be005718d87e9b817
+          fetch-depth: 0
+      - name: Verify tested source
+        run: |
+          test "$(git rev-parse HEAD)" = 9b7e69d2d7b70e84c5f0cd9be005718d87e9b817
+          git status --short
+      - name: Reclaim runner disk
+        run: |
+          df -h /
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc
+          df -h /
+      - uses: actions/cache/restore@v6
+        with:
+          path: .lake
+          key: fork-full-udr-${{ runner.os }}-${{ hashFiles('lake-manifest.json') }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            fork-full-udr-${{ runner.os }}-${{ hashFiles('lake-manifest.json') }}-
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Install validator dependencies
+        run: python3 -m pip install -r scripts/requirements-validation.txt
+      - uses: leanprover/lean-action@v1.6.0
+        with:
+          auto-config: false
+          build: false
+          test: false
+          lint: false
+          use-github-cache: false
+          use-mathlib-cache: false
+      - name: Repair restored packages
+        run: python3 scripts/repair-lake-cache.py
+      - name: Fetch dependency cache
+        run: ./scripts/lake-locked.sh exe cache get
+      - name: Full exact-source validation
+        env:
+          LEAN_NUM_THREADS: '1'
+        run: |
+          set -o pipefail
+          timeout --signal=INT --kill-after=2m 270m ./scripts/validate.sh 2>&1 | tee "$RUNNER_TEMP/full-validation.log"
+      - name: Stop workers before saving
+        if: always()
+        id: stop
+        run: bash scripts/ci-stop-lean.sh
+      - uses: actions/cache/save@v6
+        if: always() && steps.stop.outcome == 'success'
+        with:
+          path: .lake
+          key: fork-full-udr-${{ runner.os }}-${{ hashFiles('lake-manifest.json') }}-${{ github.run_id }}-${{ github.run_attempt }}
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: full-validation-log
+          path: ${{ runner.temp }}/full-validation.log
+          if-no-files-found: warn
